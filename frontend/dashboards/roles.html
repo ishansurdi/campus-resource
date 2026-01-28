@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roles Management | CAMPUSPHERE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="../auth.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --stone-50: #faf9f6;
+            --stone-100: #f1f0ec;
+            --stone-200: #e5e3da;
+            --charcoal: #1a1c1e;
+            --muted-blue: #2d4a63;
+            --accent-gold: #c5a059;
+            --accent-teal: #3d706e;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--stone-50); color: var(--charcoal); }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone-50); }
+        ::-webkit-scrollbar-thumb { background: var(--stone-200); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted-blue); }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover { transform: translateX(4px); }
+        .sidebar-link.active { background-color: var(--stone-100); border-left: 3px solid var(--accent-gold); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; border-radius: 0.125rem; max-height: 80vh; overflow-y: auto; border: 1px solid var(--stone-200); }
+    </style>
+</head>
+<body class="antialiased bg-[#faf9f6]" onload="protectPage('admin')">
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white border-r border-[#e5e3da] fixed h-full overflow-y-auto">
+            <div class="p-8 border-b border-[#e5e3da]">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 bg-[#1a1c1e] flex items-center justify-center rounded-sm"><div class="w-4 h-4 border-2 border-[#c5a059] rotate-45"></div></div>
+                    <span class="text-lg font-bold tracking-[0.15em] text-[#1a1c1e]">CAMPUSPHERE</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#faf9f6] rounded-sm">
+                    <div class="w-10 h-10 rounded-full bg-[#c5a059] flex items-center justify-center text-white font-bold text-sm">AD</div>
+                    <div>
+                        <div class="text-[11px] font-bold text-[#1a1c1e]">Admin User</div>
+                        <div class="text-[9px] text-slate-400 uppercase tracking-widest">System Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="p-6">
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Main Menu</div>
+                    <ul class="space-y-1">
+                        <li><a href="/dashboards/admin-dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>Dashboard</a></li>
+                        <li><a href="/dashboards/university.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>University</a></li>
+                        <li><a href="/dashboards/clubs.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Clubs</a></li>
+                        <li><a href="/dashboards/approvals.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>Approvals</a></li>
+                        <li><a href="/dashboards/roles.html" class="sidebar-link active flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>Roles</a></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-[#e5e3da] bg-white">
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-72 flex-1 p-8">
+            
+            <!-- Top Bar -->
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-[#1a1c1e] mb-2">Roles Management</h1>
+                    <p class="text-sm text-slate-500">Approve roles, manage requests, and audit access</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="loadData()" class="p-3 rounded-sm hover:bg-white border border-transparent hover:border-[#e5e3da] transition-all" title="Refresh">
+                        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                    <div class="h-8 w-px bg-[#e5e3da]"></div>
+                    <div class="text-right">
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">System Status</div>
+                        <div class="text-[11px] font-bold text-[#3d706e] flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#3d706e] animate-pulse"></span>Operational
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-sm bg-[#c5a059]/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-[#c5a059]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <span id="pending-count" class="text-[9px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full uppercase tracking-widest">0</span>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="pending-requests">0</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pending Approvals</div>
+                </div>
+
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-sm bg-[#3d706e]/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-[#3d706e]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="approved-count">0</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Approved Roles</div>
+                </div>
+
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-sm bg-[#2d4a63]/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-[#2d4a63]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="active-members">0</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Active Members</div>
+                </div>
+
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-sm bg-red-50 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="revoked-count">0</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Revoked Access</div>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Pending Approvals -->
+                <section class="bg-white border border-[#e5e3da] rounded-sm p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-[#1a1c1e]">Pending Approvals</h2>
+                            <p class="text-[10px] uppercase tracking-widest text-slate-400">Treasurer & Secretary Roles</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto border border-[#f1f0ec] rounded-sm">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Member</th>
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Role</th>
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Club</th>
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pending-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Membership Requests -->
+                <section class="bg-white border border-[#e5e3da] rounded-sm p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-[#1a1c1e]">Membership Requests</h2>
+                            <p class="text-[10px] uppercase tracking-widest text-slate-400">Final Authority Review</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto border border-[#f1f0ec] rounded-sm">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">User</th>
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Club</th>
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Requested</th>
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requests-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Active Roles -->
+                <section class="bg-white border border-[#e5e3da] rounded-sm p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-[#1a1c1e]">Active Roles</h2>
+                            <p class="text-[10px] uppercase tracking-widest text-slate-400">Revoke Misuse Control</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto border border-[#f1f0ec] rounded-sm">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Member</th>
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Role</th>
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Club</th>
+                                    <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="active-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Role History -->
+                <section class="bg-white border border-[#e5e3da] rounded-sm p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-[#1a1c1e]">Role History</h2>
+                            <p class="text-[10px] uppercase tracking-widest text-slate-400">Audit Trail</p>
+                        </div>
+                        <button onclick="showFullHistory()" class="text-[10px] font-bold uppercase tracking-widest text-[#2d4a63] hover:text-[#1a1c1e]">View All</button>
+                    </div>
+                    <div class="space-y-4" id="history-list"></div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="modal-overlay">
+        <div class="modal-content w-11/12 max-w-4xl p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-[#1a1c1e]">Complete Role History</h3>
+                <button onclick="closeModal('history-modal')" class="text-slate-500 hover:text-[#1a1c1e]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="overflow-x-auto border border-[#f1f0ec] rounded-sm">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                            <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Timestamp</th>
+                            <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Member</th>
+                            <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Role</th>
+                            <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Action</th>
+                            <th class="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">By</th>
+                        </tr>
+                    </thead>
+                    <tbody id="full-history-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/auth';
+        let pendingApprovals = [];
+        let membershipRequests = [];
+        let activeRoles = [];
+        let roleHistory = [];
+
+        async function loadData() {
+            await Promise.all([
+                loadPendingApprovals(),
+                loadMembershipRequests(),
+                loadActiveRoles(),
+                loadRoleHistory()
+            ]);
+            updateStats();
+        }
+
+        async function loadPendingApprovals() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE}/roles/pending/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    pendingApprovals = await response.json();
+                    renderPending();
+                }
+            } catch (error) {
+                console.error('Error loading pending approvals:', error);
+            }
+        }
+
+        async function loadMembershipRequests() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE}/membership-requests/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    membershipRequests = await response.json();
+                    renderRequests();
+                }
+            } catch (error) {
+                console.error('Error loading requests:', error);
+            }
+        }
+
+        async function loadActiveRoles() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE}/roles/active/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    activeRoles = await response.json();
+                    renderActive();
+                }
+            } catch (error) {
+                console.error('Error loading active roles:', error);
+            }
+        }
+
+        async function loadRoleHistory() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE}/roles/history/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    roleHistory = await response.json();
+                    renderHistory();
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        function renderPending() {
+            const tbody = document.getElementById('pending-body');
+            if (!pendingApprovals.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-slate-400 text-sm">No pending approvals</td></tr>';
+                return;
+            }
+            tbody.innerHTML = pendingApprovals.map(item => `
+                <tr class="border-b border-[#f1f0ec] hover:bg-[#faf9f6]">
+                    <td class="py-3 px-4 text-[12px]">${item.member_name}</td>
+                    <td class="py-3 px-4 text-[12px] font-bold uppercase text-[#c5a059]">${item.role}</td>
+                    <td class="py-3 px-4 text-[12px]">${item.club_name}</td>
+                    <td class="py-3 px-4 text-[12px] space-x-1">
+                        <button onclick="approveRole(${item.id})" class="px-2 py-1 text-[10px] font-bold uppercase text-white bg-[#3d706e] rounded hover:bg-[#3d706e]/90">Approve</button>
+                        <button onclick="rejectRole(${item.id})" class="px-2 py-1 text-[10px] font-bold uppercase text-red-600 bg-red-50 rounded hover:bg-red-100">Reject</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderRequests() {
+            const tbody = document.getElementById('requests-body');
+            if (!membershipRequests.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-slate-400 text-sm">No membership requests</td></tr>';
+                return;
+            }
+            tbody.innerHTML = membershipRequests.map(req => `
+                <tr class="border-b border-[#f1f0ec] hover:bg-[#faf9f6]">
+                    <td class="py-3 px-4 text-[12px]">${req.user_name}</td>
+                    <td class="py-3 px-4 text-[12px]">${req.club_name}</td>
+                    <td class="py-3 px-4 text-[12px] text-slate-500">${new Date(req.created_at).toLocaleDateString()}</td>
+                    <td class="py-3 px-4 text-[12px] space-x-1">
+                        <button onclick="approveRequest(${req.id})" class="px-2 py-1 text-[10px] font-bold uppercase text-white bg-[#3d706e] rounded hover:bg-[#3d706e]/90">Approve</button>
+                        <button onclick="rejectRequest(${req.id})" class="px-2 py-1 text-[10px] font-bold uppercase text-red-600 bg-red-50 rounded hover:bg-red-100">Reject</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderActive() {
+            const tbody = document.getElementById('active-body');
+            if (!activeRoles.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-slate-400 text-sm">No active roles</td></tr>';
+                return;
+            }
+            tbody.innerHTML = activeRoles.map(role => `
+                <tr class="border-b border-[#f1f0ec] hover:bg-[#faf9f6]">
+                    <td class="py-3 px-4 text-[12px]">${role.member_name}</td>
+                    <td class="py-3 px-4 text-[12px] font-bold uppercase">${role.role}</td>
+                    <td class="py-3 px-4 text-[12px]">${role.club_name}</td>
+                    <td class="py-3 px-4 text-[12px]">
+                        <button onclick="revokeAccess(${role.id}, '${role.member_name}')" class="px-2 py-1 text-[10px] font-bold uppercase text-red-600 bg-red-50 rounded hover:bg-red-100">Revoke</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            const recent = roleHistory.slice(0, 5);
+            if (!recent.length) {
+                list.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No history available</div>';
+                return;
+            }
+            list.innerHTML = recent.map(h => `
+                <div class="flex gap-4 pb-4 border-b border-[#f1f0ec]">
+                    <div class="w-10 h-10 rounded-full ${h.action === 'approved' ? 'bg-[#3d706e]/10' : h.action === 'revoked' ? 'bg-red-50' : 'bg-slate-100'} flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 ${h.action === 'approved' ? 'text-[#3d706e]' : h.action === 'revoked' ? 'text-red-600' : 'text-slate-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${h.action === 'approved' ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : 'M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'}"></path></svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-start justify-between mb-1">
+                            <h4 class="text-[13px] font-bold text-[#1a1c1e]">${h.member_name} - ${h.role}</h4>
+                            <span class="text-[9px] text-slate-400 uppercase tracking-widest">${new Date(h.timestamp).toLocaleString()}</span>
+                        </div>
+                        <p class="text-[12px] text-slate-500">${h.action} by ${h.actioned_by}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('pending-requests').textContent = pendingApprovals.length;
+            document.getElementById('pending-count').textContent = pendingApprovals.length;
+            document.getElementById('approved-count').textContent = activeRoles.length;
+            document.getElementById('active-members').textContent = activeRoles.length;
+            const revoked = roleHistory.filter(h => h.action === 'revoked').length;
+            document.getElementById('revoked-count').textContent = revoked;
+        }
+
+        async function approveRole(id) {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE}/roles/${id}/approve/`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    await loadData();
+                    alert('Role approved successfully!');
+                } else {
+                    alert('Failed to approve role');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error approving role');
+            }
+        }
+
+        async function rejectRole(id) {
+            if (!confirm('Reject this role request?')) return;
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE}/roles/${id}/reject/`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    await loadData();
+                    alert('Role rejected');
+                } else {
+                    alert('Failed to reject role');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error rejecting role');
+            }
+        }
+
+        async function approveRequest(id) {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE}/membership-requests/${id}/approve/`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    await loadData();
+                    alert('Membership approved!');
+                } else {
+                    alert('Failed to approve membership');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error approving membership');
+            }
+        }
+
+        async function rejectRequest(id) {
+            if (!confirm('Reject this membership request?')) return;
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE}/membership-requests/${id}/reject/`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    await loadData();
+                    alert('Request rejected');
+                } else {
+                    alert('Failed to reject request');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error rejecting request');
+            }
+        }
+
+        async function revokeAccess(id, name) {
+            if (!confirm(`Revoke access for ${name}? This action will be logged in the audit trail.`)) return;
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE}/roles/${id}/revoke/`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    await loadData();
+                    alert('Access revoked successfully');
+                } else {
+                    alert('Failed to revoke access');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error revoking access');
+            }
+        }
+
+        function showFullHistory() {
+            const tbody = document.getElementById('full-history-body');
+            tbody.innerHTML = roleHistory.map(h => `
+                <tr class="border-b border-[#f1f0ec]">
+                    <td class="py-3 px-4 text-[12px]">${new Date(h.timestamp).toLocaleString()}</td>
+                    <td class="py-3 px-4 text-[12px]">${h.member_name}</td>
+                    <td class="py-3 px-4 text-[12px] font-bold uppercase">${h.role}</td>
+                    <td class="py-3 px-4 text-[12px]"><span class="px-2 py-1 text-[10px] font-bold uppercase rounded ${h.action === 'approved' ? 'text-[#3d706e] bg-[#3d706e]/10' : 'text-red-600 bg-red-50'}">${h.action}</span></td>
+                    <td class="py-3 px-4 text-[12px]">${h.actioned_by}</td>
+                </tr>
+            `).join('');
+            document.getElementById('history-modal').classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

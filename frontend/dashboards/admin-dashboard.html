@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | CAMPUSPHERE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="../auth.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --stone-50: #faf9f6;
+            --stone-100: #f1f0ec;
+            --stone-200: #e5e3da;
+            --charcoal: #1a1c1e;
+            --muted-blue: #2d4a63;
+            --accent-gold: #c5a059;
+            --accent-teal: #3d706e;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--stone-50);
+            color: var(--charcoal);
+        }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone-50); }
+        ::-webkit-scrollbar-thumb { background: var(--stone-200); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted-blue); }
+
+        .sidebar-link {
+            transition: all 0.2s ease;
+        }
+        .sidebar-link:hover {
+            transform: translateX(4px);
+        }
+        .sidebar-link.active {
+            background-color: var(--stone-100);
+            border-left: 3px solid var(--accent-gold);
+        }
+    </style>
+</head>
+<body class="antialiased bg-[#faf9f6]">
+
+    <div class="flex min-h-screen">
+        
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white border-r border-[#e5e3da] fixed h-full overflow-y-auto">
+            <!-- Logo -->
+            <div class="p-8 border-b border-[#e5e3da]">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 bg-[#1a1c1e] flex items-center justify-center rounded-sm">
+                        <div class="w-4 h-4 border-2 border-[#c5a059] rotate-45"></div>
+                    </div>
+                    <span class="text-lg font-bold tracking-[0.15em] text-[#1a1c1e]">CAMPUSPHERE</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#faf9f6] rounded-sm">
+                    <div class="w-10 h-10 rounded-full bg-[#c5a059] flex items-center justify-center text-white font-bold text-sm">
+                        AD
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-[#1a1c1e]">Admin User</div>
+                        <div class="text-[9px] text-slate-400 uppercase tracking-widest">System Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="p-6">
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Main Menu</div>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#dashboard" class="sidebar-link active flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/dashboards/university.html" class="flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                University
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/dashboards/clubs.html" class="flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                Clubs
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/dashboards/roles.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                Roles
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/dashboards/approvals.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm relative">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                Approvals
+                                <span class="absolute right-3 top-3 w-2 h-2 bg-red-500 rounded-full"></span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/dashboards/events.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                Events
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/dashboards/resources.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                Resources
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Management</div>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#finance" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Finance
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#audit" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                Audit
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#analytics" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                Analytics
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">System</div>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#settings" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                Settings
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Bottom Actions -->
+            <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-[#e5e3da] bg-white">
+                <button class="w-full flex items-center justify-center gap-2 px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-72 flex-1 p-8">
+            
+            <!-- Top Bar -->
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-[#1a1c1e] mb-2">Administrative Dashboard</h1>
+                    <p class="text-sm text-slate-500">Welcome back, here's your system overview</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="relative p-3 rounded-sm hover:bg-white border border-transparent hover:border-[#e5e3da] transition-all">
+                        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                    </button>
+                    <div class="h-8 w-px bg-[#e5e3da]"></div>
+                    <div class="text-right">
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">System Status</div>
+                        <div class="text-[11px] font-bold text-[#3d706e] flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#3d706e] animate-pulse"></span>
+                            Operational
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Stat Card 1 -->
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6 hover:translate-y-[-2px] transition-all hover:shadow-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="w-12 h-12 rounded-sm bg-[#2d4a63]/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-[#2d4a63]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        </div>
+                        <span class="text-[9px] font-bold text-[#3d706e] bg-[#3d706e]/10 px-2 py-1 rounded-full uppercase tracking-widest">+12%</span>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1">2,847</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Students</div>
+                </div>
+
+                <!-- Stat Card 2 -->
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6 hover:translate-y-[-2px] transition-all hover:shadow-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="w-12 h-12 rounded-sm bg-[#3d706e]/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-[#3d706e]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                        <span class="text-[9px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full uppercase tracking-widest">-3%</span>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1">47</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Active Clubs</div>
+                </div>
+
+                <!-- Stat Card 3 -->
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6 hover:translate-y-[-2px] transition-all hover:shadow-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="w-12 h-12 rounded-sm bg-[#c5a059]/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-[#c5a059]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <span class="text-[9px] font-bold text-[#3d706e] bg-[#3d706e]/10 px-2 py-1 rounded-full uppercase tracking-widest">+8%</span>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1">$2.4M</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Budget Allocated</div>
+                </div>
+
+                <!-- Stat Card 4 -->
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6 hover:translate-y-[-2px] transition-all hover:shadow-lg relative overflow-hidden">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="w-12 h-12 rounded-sm bg-red-50 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <span class="text-[9px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full uppercase tracking-widest animate-pulse">Urgent</span>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1">12</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pending Approvals</div>
+                    <div class="absolute bottom-0 right-0 w-20 h-20 bg-red-500/5 rounded-tl-full"></div>
+                </div>
+            </div>
+
+            <!-- Two Column Layout -->
+            <div class="grid lg:grid-cols-3 gap-6 mb-8">
+                
+                <!-- Recent Activity -->
+                <div class="lg:col-span-2 bg-white border border-[#e5e3da] rounded-sm p-8">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 class="text-lg font-bold text-[#1a1c1e] mb-1">Recent Activity</h3>
+                            <p class="text-[10px] uppercase tracking-widest text-slate-400">Last 24 hours</p>
+                        </div>
+                        <button class="text-[10px] font-bold uppercase tracking-widest text-[#2d4a63] hover:text-[#1a1c1e] transition-colors">View All</button>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="flex gap-4 pb-6 border-b border-[#f1f0ec]">
+                            <div class="w-10 h-10 rounded-full bg-[#2d4a63]/10 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-[#2d4a63]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-1">
+                                    <h4 class="text-[13px] font-bold text-[#1a1c1e]">New Club Registration</h4>
+                                    <span class="text-[9px] text-slate-400 uppercase tracking-widest">2h ago</span>
+                                </div>
+                                <p class="text-[12px] text-slate-500 mb-2">AI & Robotics Club submitted registration application</p>
+                                <div class="flex gap-2">
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-[#c5a059] bg-[#c5a059]/10 px-2 py-1 rounded-full">Pending Review</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4 pb-6 border-b border-[#f1f0ec]">
+                            <div class="w-10 h-10 rounded-full bg-[#c5a059]/10 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-[#c5a059]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-1">
+                                    <h4 class="text-[13px] font-bold text-[#1a1c1e]">Budget Request Approved</h4>
+                                    <span class="text-[9px] text-slate-400 uppercase tracking-widest">4h ago</span>
+                                </div>
+                                <p class="text-[12px] text-slate-500 mb-2">Engineering Department - $15,000 for equipment</p>
+                                <div class="flex gap-2">
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-[#3d706e] bg-[#3d706e]/10 px-2 py-1 rounded-full">Approved</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4 pb-6 border-b border-[#f1f0ec]">
+                            <div class="w-10 h-10 rounded-full bg-[#3d706e]/10 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-[#3d706e]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-1">
+                                    <h4 class="text-[13px] font-bold text-[#1a1c1e]">Event Scheduled</h4>
+                                    <span class="text-[9px] text-slate-400 uppercase tracking-widest">5h ago</span>
+                                </div>
+                                <p class="text-[12px] text-slate-500 mb-2">Annual Tech Symposium - Main Auditorium, March 15</p>
+                                <div class="flex gap-2">
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-[#2d4a63] bg-[#2d4a63]/10 px-2 py-1 rounded-full">Confirmed</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-1">
+                                    <h4 class="text-[13px] font-bold text-[#1a1c1e]">Compliance Alert</h4>
+                                    <span class="text-[9px] text-slate-400 uppercase tracking-widest">6h ago</span>
+                                </div>
+                                <p class="text-[12px] text-slate-500 mb-2">3 clubs missing updated constitution documents</p>
+                                <div class="flex gap-2">
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-red-600 bg-red-50 px-2 py-1 rounded-full">Action Required</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-8">
+                    <h3 class="text-lg font-bold text-[#1a1c1e] mb-6">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button class="w-full flex items-center gap-3 p-4 border border-[#e5e3da] rounded-sm hover:bg-[#f1f0ec] hover:border-[#2d4a63] transition-all group">
+                            <div class="w-8 h-8 rounded-sm bg-[#2d4a63]/10 flex items-center justify-center group-hover:bg-[#2d4a63] transition-colors">
+                                <svg class="w-4 h-4 text-[#2d4a63] group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            </div>
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e]">New Club</span>
+                        </button>
+
+                        <button class="w-full flex items-center gap-3 p-4 border border-[#e5e3da] rounded-sm hover:bg-[#f1f0ec] hover:border-[#3d706e] transition-all group">
+                            <div class="w-8 h-8 rounded-sm bg-[#3d706e]/10 flex items-center justify-center group-hover:bg-[#3d706e] transition-colors">
+                                <svg class="w-4 h-4 text-[#3d706e] group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e]">Schedule Event</span>
+                        </button>
+
+                        <button class="w-full flex items-center gap-3 p-4 border border-[#e5e3da] rounded-sm hover:bg-[#f1f0ec] hover:border-[#c5a059] transition-all group">
+                            <div class="w-8 h-8 rounded-sm bg-[#c5a059]/10 flex items-center justify-center group-hover:bg-[#c5a059] transition-colors">
+                                <svg class="w-4 h-4 text-[#c5a059] group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e]">Budget Request</span>
+                        </button>
+
+                        <button class="w-full flex items-center gap-3 p-4 border border-[#e5e3da] rounded-sm hover:bg-[#f1f0ec] hover:border-slate-700 transition-all group">
+                            <div class="w-8 h-8 rounded-sm bg-slate-100 flex items-center justify-center group-hover:bg-slate-700 transition-colors">
+                                <svg class="w-4 h-4 text-slate-700 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            </div>
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e]">Assign Role</span>
+                        </button>
+
+                        <button class="w-full flex items-center gap-3 p-4 border border-[#e5e3da] rounded-sm hover:bg-[#f1f0ec] hover:border-[#1a1c1e] transition-all group">
+                            <div class="w-8 h-8 rounded-sm bg-[#1a1c1e]/10 flex items-center justify-center group-hover:bg-[#1a1c1e] transition-colors">
+                                <svg class="w-4 h-4 text-[#1a1c1e] group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                            </div>
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e]">Generate Report</span>
+                        </button>
+                    </div>
+
+                    <!-- System Info -->
+                    <div class="mt-8 pt-8 border-t border-[#f1f0ec]">
+                        <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4">System Status</div>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] text-slate-500">Server Uptime</span>
+                                <span class="text-[11px] font-bold text-[#3d706e]">99.9%</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] text-slate-500">Last Backup</span>
+                                <span class="text-[11px] font-bold text-[#1a1c1e]">2h ago</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] text-slate-500">Active Sessions</span>
+                                <span class="text-[11px] font-bold text-[#1a1c1e]">247</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Approvals Section -->
+            <div class="bg-white border border-[#e5e3da] rounded-sm p-8">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h3 class="text-lg font-bold text-[#1a1c1e] mb-1">Pending Approvals</h3>
+                        <p class="text-[10px] uppercase tracking-widest text-slate-400">Requires immediate attention</p>
+                    </div>
+                    <button class="text-[10px] font-bold uppercase tracking-widest text-[#2d4a63] hover:text-[#1a1c1e] transition-colors">View All</button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-[#e5e3da]">
+                                <th class="text-left py-4 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Type</th>
+                                <th class="text-left py-4 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Description</th>
+                                <th class="text-left py-4 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Submitted By</th>
+                                <th class="text-left py-4 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
+                                <th class="text-left py-4 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Priority</th>
+                                <th class="text-right py-4 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-[#f1f0ec] hover:bg-[#faf9f6] transition-colors">
+                                <td class="py-4 px-4">
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-[#2d4a63] bg-[#2d4a63]/10 px-2 py-1 rounded-full">Club</span>
+                                </td>
+                                <td class="py-4 px-4 text-[13px] text-[#1a1c1e] font-medium">AI & Robotics Club Registration</td>
+                                <td class="py-4 px-4 text-[12px] text-slate-500">John Smith</td>
+                                <td class="py-4 px-4 text-[12px] text-slate-500">Jan 25, 2026</td>
+                                <td class="py-4 px-4">
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-red-600 bg-red-50 px-2 py-1 rounded-full">High</span>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button class="p-2 hover:bg-[#3d706e]/10 rounded text-[#3d706e] transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        </button>
+                                        <button class="p-2 hover:bg-red-50 rounded text-red-600 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-[#f1f0ec] hover:bg-[#faf9f6] transition-colors">
+                                <td class="py-4 px-4">
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-[#c5a059] bg-[#c5a059]/10 px-2 py-1 rounded-full">Budget</span>
+                                </td>
+                                <td class="py-4 px-4 text-[13px] text-[#1a1c1e] font-medium">Music Department Equipment</td>
+                                <td class="py-4 px-4 text-[12px] text-slate-500">Sarah Johnson</td>
+                                <td class="py-4 px-4 text-[12px] text-slate-500">Jan 26, 2026</td>
+                                <td class="py-4 px-4">
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-[#c5a059] bg-[#c5a059]/10 px-2 py-1 rounded-full">Medium</span>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button class="p-2 hover:bg-[#3d706e]/10 rounded text-[#3d706e] transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        </button>
+                                        <button class="p-2 hover:bg-red-50 rounded text-red-600 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-[#faf9f6] transition-colors">
+                                <td class="py-4 px-4">
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-[#3d706e] bg-[#3d706e]/10 px-2 py-1 rounded-full">Event</span>
+                                </td>
+                                <td class="py-4 px-4 text-[13px] text-[#1a1c1e] font-medium">Spring Career Fair - Venue</td>
+                                <td class="py-4 px-4 text-[12px] text-slate-500">Michael Chen</td>
+                                <td class="py-4 px-4 text-[12px] text-slate-500">Jan 27, 2026</td>
+                                <td class="py-4 px-4">
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Low</span>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button class="p-2 hover:bg-[#3d706e]/10 rounded text-[#3d706e] transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        </button>
+                                        <button class="p-2 hover:bg-red-50 rounded text-red-600 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Protect page - require admin role
+        protectPage('admin');
+
+        // Get current user
+        const user = getCurrentUser();
+
+        // Logout functionality
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        }
+
+        // Sidebar navigation
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                
+                // Handle hash links (internal navigation)
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+                // For full page links (like /dashboards/university.html), let default behavior happen
+            });
+        });
+
+        // Dashboard ready
+    </script>
+
+</body>
+</html>

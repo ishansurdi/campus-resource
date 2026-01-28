@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Management | CAMPUSPHERE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="../auth.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --stone-50: #faf9f6;
+            --stone-100: #f1f0ec;
+            --stone-200: #e5e3da;
+            --charcoal: #1a1c1e;
+            --muted-blue: #2d4a63;
+            --accent-gold: #c5a059;
+            --accent-teal: #3d706e;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--stone-50); color: var(--charcoal); }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone-50); }
+        ::-webkit-scrollbar-thumb { background: var(--stone-200); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted-blue); }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover { transform: translateX(4px); }
+        .sidebar-link.active { background-color: var(--stone-100); border-left: 3px solid var(--accent-gold); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; border-radius: 0.125rem; max-height: 90vh; overflow-y: auto; border: 1px solid var(--stone-200); }
+        .badge { padding: 4px 12px; border-radius: 2px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge-draft { background: #f3f4f6; color: #6b7280; }
+        .badge-pending { background: #fef3c7; color: #a16207; }
+        .badge-approved { background: #dcfce7; color: #15803d; }
+        .badge-in_progress { background: #dbeafe; color: #1e40af; }
+        .badge-completed { background: #e0e7ff; color: #4338ca; }
+        .badge-cancelled { background: #fee2e2; color: #991b1b; }
+        .badge-closed { background: #f3f4f6; color: #374151; }
+        .badge-rejected { background: #fee2e2; color: #991b1b; }
+        .badge-academic { background: #e0f2fe; color: #075985; }
+        .badge-cultural { background: #fce7f3; color: #9f1239; }
+        .badge-technical { background: #e0e7ff; color: #3730a3; }
+        .badge-sports { background: #dcfce7; color: #15803d; }
+        .badge-joint { background: #fef3c7; border: 2px solid #f59e0b; color: #92400e; font-weight: 700; }
+        .timeline-item { border-left: 2px solid #e5e3da; padding-left: 1.5rem; position: relative; }
+        .timeline-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #c5a059; }
+    </style>
+</head>
+<body class="antialiased bg-[#faf9f6]" onload="protectPage('admin')">
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white border-r border-[#e5e3da] fixed h-full overflow-y-auto">
+            <div class="p-8 border-b border-[#e5e3da]">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 bg-[#1a1c1e] flex items-center justify-center rounded-sm"><div class="w-4 h-4 border-2 border-[#c5a059] rotate-45"></div></div>
+                    <span class="text-lg font-bold tracking-[0.15em] text-[#1a1c1e]">CAMPUSPHERE</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#faf9f6] rounded-sm">
+                    <div class="w-10 h-10 rounded-full bg-[#c5a059] flex items-center justify-center text-white font-bold text-sm">AD</div>
+                    <div>
+                        <div class="text-[11px] font-bold text-[#1a1c1e]">Admin User</div>
+                        <div class="text-[9px] text-slate-400 uppercase tracking-widest">System Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="p-6">
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Main Menu</div>
+                    <ul class="space-y-1">
+                        <li><a href="/dashboards/admin-dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>Dashboard</a></li>
+                        <li><a href="/dashboards/university.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>University</a></li>
+                        <li><a href="/dashboards/clubs.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Clubs</a></li>
+                        <li><a href="/dashboards/roles.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>Roles</a></li>
+                        <li><a href="/dashboards/approvals.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>Approvals</a></li>
+                        <li><a href="/dashboards/events.html" class="sidebar-link active flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>Events</a></li>
+                        <li><a href="/dashboards/resources.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>Resources</a></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-[#e5e3da] bg-white">
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-72 flex-1 p-8">
+            
+            <!-- Top Bar -->
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-[#1a1c1e] mb-2">Event Management System</h1>
+                    <p class="text-sm text-slate-500">Comprehensive event tracking with joint events, approval controls, and post-event reporting</p>
+                </div>
+                <button onclick="showCreateEventModal()" class="px-6 py-3 bg-[#1a1c1e] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#2d4a63] transition-colors">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Create Event
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Total Events</span>
+                        <svg class="w-5 h-5 text-[#2d4a63]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statTotal">0</div>
+                    <div class="text-xs text-slate-400">All time</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Active Today</span>
+                        <svg class="w-5 h-5 text-[#1e40af]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statActive">0</div>
+                    <div class="text-xs text-slate-400">In progress</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Joint Events</span>
+                        <svg class="w-5 h-5 text-[#f59e0b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statJoint">0</div>
+                    <div class="text-xs text-slate-400">Collaborations</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Pending</span>
+                        <svg class="w-5 h-5 text-[#a16207]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statPending">0</div>
+                    <div class="text-xs text-slate-400">Awaiting approval</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Reports</span>
+                        <svg class="w-5 h-5 text-[#15803d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statReports">0</div>
+                    <div class="text-xs text-slate-400">Completed</div>
+                </div>
+            </div>
+
+            <!-- Filters & Search -->
+            <div class="bg-white border border-[#e5e3da] p-6 mb-6">
+                <div class="grid grid-cols-5 gap-4">
+                    <select id="filterStatus" onchange="applyFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        <option value="all">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="closed">Closed</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <select id="filterType" onchange="applyFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        <option value="all">All Types</option>
+                        <option value="academic">Academic</option>
+                        <option value="cultural">Cultural</option>
+                        <option value="technical">Technical</option>
+                        <option value="sports">Sports</option>
+                        <option value="social">Social</option>
+                        <option value="workshop">Workshop</option>
+                        <option value="seminar">Seminar</option>
+                        <option value="competition">Competition</option>
+                    </select>
+                    <input type="date" id="filterStartDate" onchange="applyFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                    <input type="date" id="filterEndDate" onchange="applyFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                    <input type="text" id="searchEvents" placeholder="Search events..." onkeyup="searchEvents()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="mb-6 border-b border-[#e5e3da]">
+                <div class="flex gap-8">
+                    <button onclick="switchTab('all')" id="tabAll" class="pb-3 text-sm font-bold uppercase tracking-widest border-b-2 border-[#c5a059] text-[#1a1c1e]">All Events</button>
+                    <button onclick="switchTab('joint')" id="tabJoint" class="pb-3 text-sm font-bold uppercase tracking-widest border-b-2 border-transparent text-slate-500 hover:text-[#1a1c1e]">Joint Events</button>
+                    <button onclick="switchTab('approvals')" id="tabApprovals" class="pb-3 text-sm font-bold uppercase tracking-widest border-b-2 border-transparent text-slate-500 hover:text-[#1a1c1e]">Approval Controls</button>
+                </div>
+            </div>
+
+            <!-- All Events Tab -->
+            <div id="allTab" class="tab-content">
+                <div class="bg-white border border-[#e5e3da] mb-8">
+                    <div class="px-8 py-5 border-b border-[#e5e3da]">
+                        <h2 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e]">All Events</h2>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Event ID</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Title</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Type</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Primary Club</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Budget</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Date</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="eventsTableBody" class="divide-y divide-[#e5e3da]">
+                                <tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 text-sm">Loading events...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Joint Events Tab -->
+            <div id="jointTab" class="tab-content" style="display: none;">
+                <div class="bg-white border border-[#e5e3da] mb-8">
+                    <div class="px-8 py-5 border-b border-[#e5e3da]">
+                        <h2 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e]">Joint Events & Collaborations</h2>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Event</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Primary Club</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Collaborators</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Total Budget</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Contributions</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jointEventsTableBody" class="divide-y divide-[#e5e3da]">
+                                <tr><td colspan="7" class="px-6 py-12 text-center text-slate-400 text-sm">Loading joint events...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approvals Tab -->
+            <div id="approvalsTab" class="tab-content" style="display: none;">
+                <div class="bg-white border border-[#e5e3da] mb-8">
+                    <div class="px-8 py-5 border-b border-[#e5e3da]">
+                        <h2 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e]">Event Approval Controls</h2>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Event</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Club</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Faculty Approval</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Admin Approval</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approvalsTableBody" class="divide-y divide-[#e5e3da]">
+                                <tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 text-sm">Loading approvals...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Event Detail Modal -->
+    <div id="eventDetailModal" class="modal-overlay">
+        <div class="modal-content w-full max-w-5xl m-4">
+            <div class="p-8 border-b border-[#e5e3da] flex items-center justify-between">
+                <h2 class="text-xl font-bold text-[#1a1c1e]" id="modalEventTitle">Event Details</h2>
+                <button onclick="closeEventDetailModal()" class="text-slate-400 hover:text-[#1a1c1e]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-8">
+                <!-- Event Info Grid -->
+                <div id="eventInfoGrid" class="grid grid-cols-2 gap-6 mb-8">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Collaborators Section -->
+                <div id="collaboratorsSection" class="mb-8" style="display: none;">
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Collaborating Clubs</h3>
+                    <div id="collaboratorsList"></div>
+                </div>
+
+                <!-- Budget Breakdown -->
+                <div class="mb-8">
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Budget Breakdown</h3>
+                    <div id="budgetItems"></div>
+                </div>
+
+                <!-- Approval Timeline -->
+                <div class="mb-8">
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Approval Timeline</h3>
+                    <div id="approvalTimeline"></div>
+                </div>
+
+                <!-- Post-Event Report -->
+                <div id="reportSection">
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Post-Event Report</h3>
+                    <div id="reportContent"></div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 mt-8">
+                    <button id="btnApprove" onclick="approveEvent()" class="px-6 py-3 bg-[#15803d] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#166534] transition-colors" style="display: none;">Approve Event</button>
+                    <button id="btnReject" onclick="rejectEvent()" class="px-6 py-3 bg-[#991b1b] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#7f1d1d] transition-colors" style="display: none;">Reject Event</button>
+                    <button id="btnGenerateReport" onclick="showGenerateReportForm()" class="px-6 py-3 bg-[#1e40af] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#1e3a8a] transition-colors" style="display: none;">Generate Report</button>
+                    <button onclick="closeEventDetailModal()" class="px-6 py-3 border border-[#e5e3da] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest hover:bg-[#faf9f6] transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate Report Modal -->
+    <div id="generateReportModal" class="modal-overlay">
+        <div class="modal-content w-full max-w-3xl m-4">
+            <div class="p-8 border-b border-[#e5e3da] flex items-center justify-between">
+                <h2 class="text-xl font-bold text-[#1a1c1e]">Generate Post-Event Report</h2>
+                <button onclick="closeGenerateReportModal()" class="text-slate-400 hover:text-[#1a1c1e]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <form id="reportForm" class="p-8">
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Attendance Count *</label>
+                        <input type="number" name="attendance_count" required class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Total Expenditure *</label>
+                        <input type="number" step="0.01" name="total_expenditure" required class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Event Outcomes *</label>
+                    <textarea name="outcomes" rows="4" required class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm"></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Participant Feedback</label>
+                    <textarea name="feedback" rows="4" class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm"></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Challenges Faced</label>
+                    <textarea name="challenges" rows="3" class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm"></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Supporting Documents (URLs)</label>
+                    <input type="text" name="supporting_documents" placeholder="https://..." class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit" class="px-6 py-3 bg-[#15803d] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#166534] transition-colors">Submit Report</button>
+                    <button type="button" onclick="closeGenerateReportModal()" class="px-6 py-3 border border-[#e5e3da] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest hover:bg-[#faf9f6] transition-colors">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allEvents = [];
+        let currentEventId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEvents();
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('[id^="tab"]').forEach(t => {
+                t.classList.remove('border-[#c5a059]', 'text-[#1a1c1e]');
+                t.classList.add('border-transparent', 'text-slate-500');
+            });
+
+            document.getElementById(tab + 'Tab').style.display = 'block';
+            const tabBtn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            tabBtn.classList.add('border-[#c5a059]', 'text-[#1a1c1e]');
+            tabBtn.classList.remove('border-transparent', 'text-slate-500');
+
+            if (tab === 'joint') {
+                loadJointEvents();
+            } else if (tab === 'approvals') {
+                loadApprovals();
+            }
+        }
+
+        async function loadEvents() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:8000/api/auth/events/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    allEvents = await response.json();
+                    renderEvents(allEvents);
+                    updateStats(allEvents);
+                }
+            } catch (error) {
+                console.error('Error loading events:', error);
+            }
+        }
+
+        function renderEvents(events) {
+            const tbody = document.getElementById('eventsTableBody');
+            
+            if (events.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 text-sm">No events found. Click "Create Event" to add one.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = events.map(event => {
+                const budgetDisplay = event.budget_allocated ? `₹${event.budget_allocated.toLocaleString()}` : 'N/A';
+                const jointBadge = event.is_joint_event ? '<span class="badge badge-joint ml-2">JOINT</span>' : '';
+                
+                return `
+                    <tr class="hover:bg-[#faf9f6] transition-colors">
+                        <td class="px-6 py-4 text-sm font-mono text-slate-600">${event.event_id}</td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-semibold text-[#1a1c1e]">${event.title}${jointBadge}</div>
+                            <div class="text-xs text-slate-500">${event.description?.substring(0, 50) || ''}...</div>
+                        </td>
+                        <td class="px-6 py-4"><span class="badge badge-${event.event_type}">${event.event_type}</span></td>
+                        <td class="px-6 py-4 text-sm text-slate-600">${event.primary_club_name || 'N/A'}</td>
+                        <td class="px-6 py-4"><span class="badge badge-${event.status}">${event.status.replace('_', ' ')}</span></td>
+                        <td class="px-6 py-4 text-sm text-slate-600">${budgetDisplay}</td>
+                        <td class="px-6 py-4 text-xs text-slate-500">${formatDate(event.start_date)}</td>
+                        <td class="px-6 py-4">
+                            <button onclick="showEventDetail(${event.id})" class="text-xs font-bold uppercase tracking-widest text-[#2d4a63] hover:text-[#1a1c1e]">View</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function loadJointEvents() {
+            const jointEvents = allEvents.filter(e => e.is_joint_event);
+            const tbody = document.getElementById('jointEventsTableBody');
+            
+            if (jointEvents.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-slate-400 text-sm">No joint events found</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = jointEvents.map(event => `
+                <tr class="hover:bg-[#faf9f6] transition-colors">
+                    <td class="px-6 py-4 text-sm font-semibold text-[#1a1c1e]">${event.title}</td>
+                    <td class="px-6 py-4 text-sm text-slate-600">${event.primary_club_name}</td>
+                    <td class="px-6 py-4 text-xs text-slate-500">${event.collaborators_count || 0} clubs</td>
+                    <td class="px-6 py-4 text-sm text-slate-600">₹${(event.budget_allocated || 0).toLocaleString()}</td>
+                    <td class="px-6 py-4 text-xs text-slate-500">View breakdown</td>
+                    <td class="px-6 py-4"><span class="badge badge-${event.status}">${event.status.replace('_', ' ')}</span></td>
+                    <td class="px-6 py-4">
+                        <button onclick="showEventDetail(${event.id})" class="text-xs font-bold uppercase tracking-widest text-[#2d4a63] hover:text-[#1a1c1e]">View</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadApprovals() {
+            const pendingEvents = allEvents.filter(e => e.status === 'pending' || e.status === 'approved');
+            const tbody = document.getElementById('approvalsTableBody');
+            
+            if (pendingEvents.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 text-sm">No pending approvals</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = pendingEvents.map(event => {
+                const facultyStatus = event.faculty_approved ? '✓ Approved' : '⏳ Pending';
+                const adminStatus = event.admin_approved ? '✓ Approved' : '⏳ Pending';
+                
+                return `
+                    <tr class="hover:bg-[#faf9f6] transition-colors">
+                        <td class="px-6 py-4 text-sm font-semibold text-[#1a1c1e]">${event.title}</td>
+                        <td class="px-6 py-4 text-sm text-slate-600">${event.primary_club_name}</td>
+                        <td class="px-6 py-4 text-xs ${event.faculty_approved ? 'text-green-600' : 'text-amber-600'}">${facultyStatus}</td>
+                        <td class="px-6 py-4 text-xs ${event.admin_approved ? 'text-green-600' : 'text-amber-600'}">${adminStatus}</td>
+                        <td class="px-6 py-4"><span class="badge badge-${event.status}">${event.status}</span></td>
+                        <td class="px-6 py-4">
+                            <button onclick="showEventDetail(${event.id})" class="text-xs font-bold uppercase tracking-widest text-[#2d4a63] hover:text-[#1a1c1e]">Review</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateStats(events) {
+            document.getElementById('statTotal').textContent = events.length;
+            
+            const today = new Date().toDateString();
+            const activeToday = events.filter(e => {
+                const eventDate = new Date(e.start_date).toDateString();
+                return eventDate === today && e.status === 'in_progress';
+            }).length;
+            document.getElementById('statActive').textContent = activeToday;
+            
+            document.getElementById('statJoint').textContent = events.filter(e => e.is_joint_event).length;
+            document.getElementById('statPending').textContent = events.filter(e => e.status === 'pending').length;
+            document.getElementById('statReports').textContent = events.filter(e => e.has_report).length;
+        }
+
+        async function showEventDetail(eventId) {
+            currentEventId = eventId;
+            const event = allEvents.find(e => e.id === eventId);
+            if (!event) return;
+
+            // Populate modal
+            document.getElementById('modalEventTitle').textContent = event.title;
+            
+            // Event info grid
+            const infoGrid = document.getElementById('eventInfoGrid');
+            infoGrid.innerHTML = `
+                <div><span class="text-xs text-slate-400">Event Type:</span><div class="text-sm font-semibold">${event.event_type}</div></div>
+                <div><span class="text-xs text-slate-400">Status:</span><div class="text-sm font-semibold">${event.status.replace('_', ' ')}</div></div>
+                <div><span class="text-xs text-slate-400">Primary Club:</span><div class="text-sm font-semibold">${event.primary_club_name}</div></div>
+                <div><span class="text-xs text-slate-400">Budget Allocated:</span><div class="text-sm font-semibold">₹${(event.budget_allocated || 0).toLocaleString()}</div></div>
+                <div><span class="text-xs text-slate-400">Start Date:</span><div class="text-sm font-semibold">${formatDate(event.start_date)}</div></div>
+                <div><span class="text-xs text-slate-400">End Date:</span><div class="text-sm font-semibold">${formatDate(event.end_date)}</div></div>
+                <div><span class="text-xs text-slate-400">Location:</span><div class="text-sm font-semibold">${event.location || 'TBD'}</div></div>
+                <div><span class="text-xs text-slate-400">Expected Attendance:</span><div class="text-sm font-semibold">${event.expected_attendance || 'N/A'}</div></div>
+            `;
+
+            // Show collaborators if joint event
+            if (event.is_joint_event) {
+                document.getElementById('collaboratorsSection').style.display = 'block';
+                // Load collaborators
+            } else {
+                document.getElementById('collaboratorsSection').style.display = 'none';
+            }
+
+            // Show appropriate buttons
+            document.getElementById('btnApprove').style.display = event.status === 'pending' ? 'inline-block' : 'none';
+            document.getElementById('btnReject').style.display = event.status === 'pending' ? 'inline-block' : 'none';
+            document.getElementById('btnGenerateReport').style.display = event.status === 'completed' && !event.has_report ? 'inline-block' : 'none';
+
+            document.getElementById('eventDetailModal').classList.add('active');
+        }
+
+        function closeEventDetailModal() {
+            document.getElementById('eventDetailModal').classList.remove('active');
+            currentEventId = null;
+        }
+
+        function showGenerateReportForm() {
+            document.getElementById('generateReportModal').classList.add('active');
+        }
+
+        function closeGenerateReportModal() {
+            document.getElementById('generateReportModal').classList.remove('active');
+        }
+
+        async function approveEvent() {
+            if (!currentEventId) return;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:8000/api/auth/events/${currentEventId}/approve/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    alert('Event approved successfully');
+                    closeEventDetailModal();
+                    loadEvents();
+                }
+            } catch (error) {
+                console.error('Error approving event:', error);
+            }
+        }
+
+        async function rejectEvent() {
+            if (!currentEventId) return;
+            
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:8000/api/auth/events/${currentEventId}/reject/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason })
+                });
+
+                if (response.ok) {
+                    alert('Event rejected');
+                    closeEventDetailModal();
+                    loadEvents();
+                }
+            } catch (error) {
+                console.error('Error rejecting event:', error);
+            }
+        }
+
+        document.getElementById('reportForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:8000/api/auth/events/${currentEventId}/report/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Report submitted successfully');
+                    closeGenerateReportModal();
+                    closeEventDetailModal();
+                    loadEvents();
+                }
+            } catch (error) {
+                console.error('Error submitting report:', error);
+            }
+        });
+
+        function applyFilters() {
+            const statusFilter = document.getElementById('filterStatus').value;
+            const typeFilter = document.getElementById('filterType').value;
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            
+            let filtered = allEvents;
+            
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(e => e.status === statusFilter);
+            }
+            
+            if (typeFilter !== 'all') {
+                filtered = filtered.filter(e => e.event_type === typeFilter);
+            }
+            
+            if (startDate) {
+                filtered = filtered.filter(e => new Date(e.start_date) >= new Date(startDate));
+            }
+            
+            if (endDate) {
+                filtered = filtered.filter(e => new Date(e.start_date) <= new Date(endDate));
+            }
+            
+            renderEvents(filtered);
+        }
+
+        function searchEvents() {
+            const searchTerm = document.getElementById('searchEvents').value.toLowerCase();
+            const filtered = allEvents.filter(e => 
+                e.title.toLowerCase().includes(searchTerm) ||
+                e.event_id.toLowerCase().includes(searchTerm) ||
+                e.description?.toLowerCase().includes(searchTerm)
+            );
+            renderEvents(filtered);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function showCreateEventModal() {
+            alert('Create Event form will be implemented with backend API endpoints');
+        }
+    </script>
+
+</body>
+</html>

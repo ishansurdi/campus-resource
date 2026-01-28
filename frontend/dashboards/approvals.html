@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approvals | CAMPUSPHERE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="../auth.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --stone-50: #faf9f6;
+            --stone-100: #f1f0ec;
+            --stone-200: #e5e3da;
+            --charcoal: #1a1c1e;
+            --muted-blue: #2d4a63;
+            --accent-gold: #c5a059;
+            --accent-teal: #3d706e;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--stone-50); color: var(--charcoal); }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone-50); }
+        ::-webkit-scrollbar-thumb { background: var(--stone-200); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted-blue); }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover { transform: translateX(4px); }
+        .sidebar-link.active { background-color: var(--stone-100); border-left: 3px solid var(--accent-gold); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; border-radius: 0.125rem; max-height: 85vh; overflow-y: auto; border: 1px solid var(--stone-200); }
+        .badge { padding: 4px 12px; border-radius: 2px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge-event { background: #e0f2fe; color: #075985; }
+        .badge-budget { background: #dcfce7; color: #15803d; }
+        .badge-resource { background: #fef3c7; color: #a16207; }
+        .badge-pending { background: #fef3c7; color: #a16207; }
+        .badge-approved { background: #dcfce7; color: #15803d; }
+        .badge-rejected { background: #fee2e2; color: #991b1b; }
+        .badge-under-review { background: #e0e7ff; color: #3730a3; }
+        .priority-low { border-left: 3px solid #94a3b8; }
+        .priority-medium { border-left: 3px solid #f59e0b; }
+        .priority-high { border-left: 3px solid #dc2626; }
+    </style>
+</head>
+<body class="antialiased bg-[#faf9f6]" onload="protectPage('admin')">
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white border-r border-[#e5e3da] fixed h-full overflow-y-auto">
+            <div class="p-8 border-b border-[#e5e3da]">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 bg-[#1a1c1e] flex items-center justify-center rounded-sm"><div class="w-4 h-4 border-2 border-[#c5a059] rotate-45"></div></div>
+                    <span class="text-lg font-bold tracking-[0.15em] text-[#1a1c1e]">CAMPUSPHERE</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#faf9f6] rounded-sm">
+                    <div class="w-10 h-10 rounded-full bg-[#c5a059] flex items-center justify-center text-white font-bold text-sm">AD</div>
+                    <div>
+                        <div class="text-[11px] font-bold text-[#1a1c1e]">Admin User</div>
+                        <div class="text-[9px] text-slate-400 uppercase tracking-widest">System Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="p-6">
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Main Menu</div>
+                    <ul class="space-y-1">
+                        <li><a href="/dashboards/admin-dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>Dashboard</a></li>
+                        <li><a href="/dashboards/university.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>University</a></li>
+                        <li><a href="/dashboards/clubs.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Clubs</a></li>
+                        <li><a href="/dashboards/roles.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>Roles</a></li>
+                        <li><a href="/dashboards/approvals.html" class="sidebar-link active flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>Approvals</a></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-[#e5e3da] bg-white">
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-72 flex-1 p-8">
+            
+            <!-- Top Bar -->
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-[#1a1c1e] mb-2">Approval Management</h1>
+                    <p class="text-sm text-slate-500">Review and process pending requests</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <select id="filterType" onchange="applyFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        <option value="all">All Types</option>
+                        <option value="event">Events</option>
+                        <option value="budget">Budgets</option>
+                        <option value="resource">Resources</option>
+                    </select>
+                    <select id="filterStatus" onchange="applyFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        <option value="pending">Pending</option>
+                        <option value="all">All Status</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Pending</span>
+                        <svg class="w-5 h-5 text-[#f59e0b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statPending">0</div>
+                    <div class="text-xs text-slate-400">Awaiting Review</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Under Review</span>
+                        <svg class="w-5 h-5 text-[#3730a3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statReview">0</div>
+                    <div class="text-xs text-slate-400">Being Reviewed</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Approved</span>
+                        <svg class="w-5 h-5 text-[#15803d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statApproved">0</div>
+                    <div class="text-xs text-slate-400">This Month</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Rejected</span>
+                        <svg class="w-5 h-5 text-[#991b1b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statRejected">0</div>
+                    <div class="text-xs text-slate-400">This Month</div>
+                </div>
+            </div>
+
+            <!-- Main Approvals Table -->
+            <div class="bg-white border border-[#e5e3da] mb-8">
+                <div class="px-8 py-5 border-b border-[#e5e3da] flex items-center justify-between">
+                    <h2 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e]">Pending Approvals</h2>
+                    <input type="text" id="searchInput" placeholder="Search..." onkeyup="searchApprovals()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm w-64">
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Priority</th>
+                                <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Type</th>
+                                <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Title</th>
+                                <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">From</th>
+                                <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Reviewer</th>
+                                <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                                <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Submitted</th>
+                                <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approvalsTableBody" class="divide-y divide-[#e5e3da]">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content w-full max-w-4xl m-4">
+            <div class="p-8 border-b border-[#e5e3da] flex items-center justify-between">
+                <h2 class="text-xl font-bold text-[#1a1c1e]">Approval Details</h2>
+                <button onclick="closeDetailModal()" class="text-slate-400 hover:text-[#1a1c1e]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-8">
+                <!-- Basic Information -->
+                <div class="mb-8">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span id="detailType" class="badge"></span>
+                        <span id="detailStatus" class="badge"></span>
+                        <span id="detailPriority" class="text-xs font-semibold text-slate-500"></span>
+                    </div>
+                    <h3 id="detailTitle" class="text-2xl font-bold text-[#1a1c1e] mb-2"></h3>
+                    <p id="detailDescription" class="text-slate-600"></p>
+                </div>
+
+                <!-- Request Information Grid -->
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Club</div>
+                        <div id="detailClub" class="text-sm font-semibold text-[#1a1c1e]"></div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Requested By</div>
+                        <div id="detailRequestedBy" class="text-sm font-semibold text-[#1a1c1e]"></div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Current Reviewer</div>
+                        <div id="detailReviewer" class="text-sm font-semibold text-[#1a1c1e]"></div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Submitted On</div>
+                        <div id="detailCreatedAt" class="text-sm font-semibold text-[#1a1c1e]"></div>
+                    </div>
+                </div>
+
+                <!-- Type-Specific Details -->
+                <div id="typeSpecificDetails" class="mb-8"></div>
+
+                <!-- Action History -->
+                <div class="mb-8">
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Action History</h4>
+                    <div id="historyTimeline" class="space-y-4"></div>
+                </div>
+
+                <!-- Admin Actions -->
+                <div class="border-t border-[#e5e3da] pt-6">
+                    <div class="mb-4">
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Admin Notes</label>
+                        <textarea id="adminNotes" rows="3" class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm"></textarea>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="approveRequest()" class="px-6 py-3 bg-[#15803d] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#166534] transition-colors">Approve</button>
+                        <button onclick="rejectRequest()" class="px-6 py-3 bg-[#991b1b] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#7f1d1d] transition-colors">Reject</button>
+                        <button onclick="markUnderReview()" class="px-6 py-3 bg-[#3730a3] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#312e81] transition-colors">Mark Under Review</button>
+                        <button onclick="closeDetailModal()" class="px-6 py-3 border border-[#e5e3da] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest hover:bg-[#faf9f6] transition-colors">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allApprovals = [];
+        let selectedApprovalId = null;
+
+        // Load approvals on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadApprovals();
+        });
+
+        async function loadApprovals() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:8000/api/auth/approvals/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    allApprovals = await response.json();
+                    renderApprovals(allApprovals);
+                    updateStats(allApprovals);
+                } else {
+                    console.error('Failed to load approvals');
+                }
+            } catch (error) {
+                console.error('Error loading approvals:', error);
+            }
+        }
+
+        function renderApprovals(approvals) {
+            const tbody = document.getElementById('approvalsTableBody');
+            
+            if (approvals.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-slate-400 text-sm">
+                            No approval requests found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = approvals.map(approval => `
+                <tr class="hover:bg-[#faf9f6] transition-colors ${getPriorityClass(approval.priority)}" onclick="showDetails(${approval.id})">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            ${getPriorityIcon(approval.priority)}
+                            <span class="text-xs font-semibold text-slate-600 uppercase">${approval.priority}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="badge badge-${approval.request_type}">${approval.request_type}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-semibold text-[#1a1c1e]">${approval.title}</div>
+                        ${approval.amount ? `<div class="text-xs text-slate-400 mt-1">Amount: $${parseFloat(approval.amount).toFixed(2)}</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-semibold text-[#1a1c1e]">${approval.club_name}</div>
+                        <div class="text-xs text-slate-400 mt-1">${approval.requested_by_name}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-semibold text-slate-600">${approval.current_reviewer_role || 'Unassigned'}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="badge badge-${approval.status}">${approval.status.replace('_', ' ')}</span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-500">
+                        ${formatDate(approval.created_at)}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex gap-2">
+                            <button onclick="event.stopPropagation(); showDetails(${approval.id})" class="px-3 py-1 text-xs font-bold uppercase tracking-widest text-[#2d4a63] hover:text-[#1a1c1e]">View</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStats(approvals) {
+            const now = new Date();
+            const thisMonth = approvals.filter(a => {
+                const createdDate = new Date(a.created_at);
+                return createdDate.getMonth() === now.getMonth() && createdDate.getFullYear() === now.getFullYear();
+            });
+
+            document.getElementById('statPending').textContent = approvals.filter(a => a.status === 'pending').length;
+            document.getElementById('statReview').textContent = approvals.filter(a => a.status === 'under_review').length;
+            document.getElementById('statApproved').textContent = thisMonth.filter(a => a.status === 'approved').length;
+            document.getElementById('statRejected').textContent = thisMonth.filter(a => a.status === 'rejected').length;
+        }
+
+        async function showDetails(approvalId) {
+            selectedApprovalId = approvalId;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:8000/api/auth/approvals/${approvalId}/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const approval = await response.json();
+                    populateDetailModal(approval);
+                    document.getElementById('detailModal').classList.add('active');
+                } else {
+                    console.error('Failed to load approval details');
+                }
+            } catch (error) {
+                console.error('Error loading approval details:', error);
+            }
+        }
+
+        function populateDetailModal(approval) {
+            document.getElementById('detailType').textContent = approval.request_type;
+            document.getElementById('detailType').className = `badge badge-${approval.request_type}`;
+            
+            document.getElementById('detailStatus').textContent = approval.status.replace('_', ' ');
+            document.getElementById('detailStatus').className = `badge badge-${approval.status}`;
+            
+            document.getElementById('detailPriority').textContent = `Priority: ${approval.priority.toUpperCase()}`;
+            document.getElementById('detailTitle').textContent = approval.title;
+            document.getElementById('detailDescription').textContent = approval.description;
+            document.getElementById('detailClub').textContent = approval.club_name;
+            document.getElementById('detailRequestedBy').textContent = approval.requested_by_name;
+            document.getElementById('detailReviewer').textContent = approval.current_reviewer_role || 'Unassigned';
+            document.getElementById('detailCreatedAt').textContent = formatDateTime(approval.created_at);
+            document.getElementById('adminNotes').value = approval.admin_notes || '';
+
+            // Type-specific details
+            let typeSpecificHTML = '';
+            if (approval.request_type === 'event') {
+                typeSpecificHTML = `
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Event Date</div>
+                            <div class="text-sm font-semibold text-[#1a1c1e]">${approval.event_date ? formatDateTime(approval.event_date) : 'Not specified'}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Location</div>
+                            <div class="text-sm font-semibold text-[#1a1c1e]">${approval.event_location || 'Not specified'}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Expected Participants</div>
+                            <div class="text-sm font-semibold text-[#1a1c1e]">${approval.expected_participants || 'Not specified'}</div>
+                        </div>
+                    </div>
+                `;
+            } else if (approval.request_type === 'budget') {
+                typeSpecificHTML = `
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Amount</div>
+                            <div class="text-sm font-semibold text-[#1a1c1e]">$${parseFloat(approval.amount).toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Category</div>
+                            <div class="text-sm font-semibold text-[#1a1c1e]">${approval.budget_category || 'Not specified'}</div>
+                        </div>
+                    </div>
+                `;
+            } else if (approval.request_type === 'resource') {
+                typeSpecificHTML = `
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Resource Name</div>
+                            <div class="text-sm font-semibold text-[#1a1c1e]">${approval.resource_name || 'Not specified'}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Quantity</div>
+                            <div class="text-sm font-semibold text-[#1a1c1e]">${approval.quantity || 'Not specified'}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Category</div>
+                            <div class="text-sm font-semibold text-[#1a1c1e]">${approval.resource_category || 'Not specified'}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            document.getElementById('typeSpecificDetails').innerHTML = typeSpecificHTML;
+
+            // Render history timeline
+            renderHistoryTimeline(approval.history || []);
+        }
+
+        function renderHistoryTimeline(history) {
+            const timeline = document.getElementById('historyTimeline');
+            
+            if (history.length === 0) {
+                timeline.innerHTML = '<div class="text-sm text-slate-400">No history available</div>';
+                return;
+            }
+
+            timeline.innerHTML = history.map(entry => `
+                <div class="flex gap-4 items-start">
+                    <div class="w-2 h-2 rounded-full bg-[#c5a059] mt-2"></div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-sm font-semibold text-[#1a1c1e]">${entry.action.replace('_', ' ')}</span>
+                            <span class="text-xs text-slate-400">${formatDateTime(entry.timestamp)}</span>
+                        </div>
+                        <div class="text-sm text-slate-600">By ${entry.performed_by_name}</div>
+                        ${entry.comment ? `<div class="text-sm text-slate-500 mt-1 italic">"${entry.comment}"</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function approveRequest() {
+            if (!selectedApprovalId) return;
+            
+            const notes = document.getElementById('adminNotes').value;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:8000/api/auth/approvals/${selectedApprovalId}/approve/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ admin_notes: notes })
+                });
+
+                if (response.ok) {
+                    alert('Request approved successfully');
+                    closeDetailModal();
+                    loadApprovals();
+                } else {
+                    alert('Failed to approve request');
+                }
+            } catch (error) {
+                console.error('Error approving request:', error);
+                alert('Error approving request');
+            }
+        }
+
+        async function rejectRequest() {
+            if (!selectedApprovalId) return;
+            
+            const reason = prompt('Please provide a reason for rejection:');
+            if (!reason) return;
+            
+            const notes = document.getElementById('adminNotes').value;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:8000/api/auth/approvals/${selectedApprovalId}/reject/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        rejection_reason: reason,
+                        admin_notes: notes 
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Request rejected');
+                    closeDetailModal();
+                    loadApprovals();
+                } else {
+                    alert('Failed to reject request');
+                }
+            } catch (error) {
+                console.error('Error rejecting request:', error);
+                alert('Error rejecting request');
+            }
+        }
+
+        async function markUnderReview() {
+            if (!selectedApprovalId) return;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:8000/api/auth/approvals/${selectedApprovalId}/review/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    alert('Marked as under review');
+                    closeDetailModal();
+                    loadApprovals();
+                } else {
+                    alert('Failed to update status');
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Error updating status');
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('active');
+            selectedApprovalId = null;
+        }
+
+        function applyFilters() {
+            const typeFilter = document.getElementById('filterType').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            
+            let filtered = allApprovals;
+            
+            if (typeFilter !== 'all') {
+                filtered = filtered.filter(a => a.request_type === typeFilter);
+            }
+            
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(a => a.status === statusFilter);
+            }
+            
+            renderApprovals(filtered);
+        }
+
+        function searchApprovals() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allApprovals.filter(a => 
+                a.title.toLowerCase().includes(searchTerm) ||
+                a.club_name.toLowerCase().includes(searchTerm) ||
+                a.description.toLowerCase().includes(searchTerm)
+            );
+            renderApprovals(filtered);
+        }
+
+        function getPriorityClass(priority) {
+            return `priority-${priority}`;
+        }
+
+        function getPriorityIcon(priority) {
+            const colors = {
+                low: '#94a3b8',
+                medium: '#f59e0b',
+                high: '#dc2626'
+            };
+            return `<div class="w-2 h-2 rounded-full" style="background-color: ${colors[priority]}"></div>`;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    </script>
+
+</body>
+</html>

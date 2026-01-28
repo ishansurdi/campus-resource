@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Management | CAMPUSPHERE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="../auth.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --stone-50: #faf9f6;
+            --stone-100: #f1f0ec;
+            --stone-200: #e5e3da;
+            --charcoal: #1a1c1e;
+            --muted-blue: #2d4a63;
+            --accent-gold: #c5a059;
+            --accent-teal: #3d706e;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--stone-50); color: var(--charcoal); }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone-50); }
+        ::-webkit-scrollbar-thumb { background: var(--stone-200); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted-blue); }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover { transform: translateX(4px); }
+        .sidebar-link.active { background-color: var(--stone-100); border-left: 3px solid var(--accent-gold); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; border-radius: 0.125rem; max-height: 90vh; overflow-y: auto; border: 1px solid var(--stone-200); }
+        .badge { padding: 4px 12px; border-radius: 2px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge-available { background: #dcfce7; color: #15803d; }
+        .badge-maintenance { background: #fef3c7; color: #a16207; }
+        .badge-retired { background: #f3f4f6; color: #6b7280; }
+        .badge-pending { background: #fef3c7; color: #a16207; }
+        .badge-approved { background: #dcfce7; color: #15803d; }
+        .badge-rejected { background: #fee2e2; color: #991b1b; }
+        .badge-physical { background: #e0f2fe; color: #075985; }
+        .badge-digital { background: #e0e7ff; color: #3730a3; }
+        .conflict-warning { border-left: 4px solid #dc2626; background: #fef2f2; }
+        .time-slot { border: 2px solid #e5e3da; transition: all 0.2s; cursor: pointer; }
+        .time-slot:hover { border-color: #c5a059; background: #faf9f6; }
+        .time-slot.booked { background: #fee2e2; border-color: #fca5a5; cursor: not-allowed; }
+        .time-slot.selected { background: #dcfce7; border-color: #86efac; }
+    </style>
+</head>
+<body class="antialiased bg-[#faf9f6]" onload="protectPage('admin')">
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white border-r border-[#e5e3da] fixed h-full overflow-y-auto">
+            <div class="p-8 border-b border-[#e5e3da]">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 bg-[#1a1c1e] flex items-center justify-center rounded-sm"><div class="w-4 h-4 border-2 border-[#c5a059] rotate-45"></div></div>
+                    <span class="text-lg font-bold tracking-[0.15em] text-[#1a1c1e]">CAMPUSPHERE</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#faf9f6] rounded-sm">
+                    <div class="w-10 h-10 rounded-full bg-[#c5a059] flex items-center justify-center text-white font-bold text-sm">AD</div>
+                    <div>
+                        <div class="text-[11px] font-bold text-[#1a1c1e]">Admin User</div>
+                        <div class="text-[9px] text-slate-400 uppercase tracking-widest">System Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="p-6">
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Main Menu</div>
+                    <ul class="space-y-1">
+                        <li><a href="/dashboards/admin-dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>Dashboard</a></li>
+                        <li><a href="/dashboards/university.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>University</a></li>
+                        <li><a href="/dashboards/clubs.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Clubs</a></li>
+                        <li><a href="/dashboards/roles.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>Roles</a></li>
+                        <li><a href="/dashboards/approvals.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>Approvals</a></li>
+                        <li><a href="/dashboards/events.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>Events</a></li>
+                        <li><a href="/dashboards/resources.html" class="sidebar-link active flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-[#1a1c1e] rounded-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>Resources</a></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-[#e5e3da] bg-white">
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-72 flex-1 p-8">
+            
+            <!-- Top Bar -->
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-[#1a1c1e] mb-2">Resource Booking System</h1>
+                    <p class="text-sm text-slate-500">Time slots with conflict detection, immutable logs, and configurable approvals</p>
+                </div>
+                <button onclick="showAddResourceModal()" class="px-6 py-3 bg-[#1a1c1e] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#2d4a63] transition-colors">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add Resource
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Total Resources</span>
+                        <svg class="w-5 h-5 text-[#2d4a63]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statTotal">0</div>
+                    <div class="text-xs text-slate-400">Physical & Digital</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Pending</span>
+                        <svg class="w-5 h-5 text-[#f59e0b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statPending">0</div>
+                    <div class="text-xs text-slate-400">Awaiting approval</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Active Today</span>
+                        <svg class="w-5 h-5 text-[#15803d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statToday">0</div>
+                    <div class="text-xs text-slate-400">Current bookings</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Conflicts</span>
+                        <svg class="w-5 h-5 text-[#dc2626]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statConflicts">0</div>
+                    <div class="text-xs text-slate-400">Detected</div>
+                </div>
+
+                <div class="bg-white p-6 border border-[#e5e3da]">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Audit Logs</span>
+                        <svg class="w-5 h-5 text-[#3730a3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div class="text-3xl font-bold text-[#1a1c1e] mb-1" id="statLogs">0</div>
+                    <div class="text-xs text-slate-400">Immutable entries</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="mb-6 border-b border-[#e5e3da]">
+                <div class="flex gap-8">
+                    <button onclick="switchTab('resources')" id="tabResources" class="pb-3 text-sm font-bold uppercase tracking-widest border-b-2 border-[#c5a059] text-[#1a1c1e]">Resources</button>
+                    <button onclick="switchTab('bookings')" id="tabBookings" class="pb-3 text-sm font-bold uppercase tracking-widest border-b-2 border-transparent text-slate-500 hover:text-[#1a1c1e]">Bookings</button>
+                    <button onclick="switchTab('logs')" id="tabLogs" class="pb-3 text-sm font-bold uppercase tracking-widest border-b-2 border-transparent text-slate-500 hover:text-[#1a1c1e]">Audit Logs</button>
+                </div>
+            </div>
+
+            <!-- Resources Tab -->
+            <div id="resourcesTab" class="tab-content">
+                <div class="bg-white border border-[#e5e3da] mb-8">
+                    <div class="px-8 py-5 border-b border-[#e5e3da] flex items-center justify-between">
+                        <h2 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e]">All Resources</h2>
+                        <div class="flex gap-3">
+                            <select id="filterType" onchange="applyResourceFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                                <option value="all">All Types</option>
+                                <option value="physical">Physical</option>
+                                <option value="digital">Digital</option>
+                            </select>
+                            <select id="filterCategory" onchange="applyResourceFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                                <option value="all">All Categories</option>
+                                <option value="room">Room/Hall</option>
+                                <option value="equipment">Equipment</option>
+                                <option value="lab">Laboratory</option>
+                                <option value="software">Software</option>
+                            </select>
+                            <input type="text" id="searchResources" placeholder="Search..." onkeyup="searchResources()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm w-64">
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Resource ID</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Name</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Type</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Category</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Location</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Mode</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resourcesTableBody" class="divide-y divide-[#e5e3da]">
+                                <tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 text-sm">Loading resources...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bookings Tab -->
+            <div id="bookingsTab" class="tab-content" style="display: none;">
+                <div class="bg-white border border-[#e5e3da] mb-8">
+                    <div class="px-8 py-5 border-b border-[#e5e3da] flex items-center justify-between">
+                        <h2 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e]">All Bookings with Conflict Detection</h2>
+                        <div class="flex gap-3">
+                            <select id="filterBookingStatus" onchange="applyBookingFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                                <option value="all">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <input type="date" id="filterDate" onchange="applyBookingFilters()" class="px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Booking ID</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Resource</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Booked By</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Time Slot</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Conflict</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Approval</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingsTableBody" class="divide-y divide-[#e5e3da]">
+                                <tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 text-sm">Loading bookings...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div id="logsTab" class="tab-content" style="display: none;">
+                <div class="bg-white border border-[#e5e3da] mb-8">
+                    <div class="px-8 py-5 border-b border-[#e5e3da] flex items-center justify-between">
+                        <h2 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e]">Immutable Audit Logs</h2>
+                        <div class="text-xs text-slate-400">All actions are permanently logged and cannot be modified</div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-[#faf9f6] border-b border-[#e5e3da]">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Log ID</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Timestamp</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Action</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Resource</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">Performed By</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody" class="divide-y divide-[#e5e3da]">
+                                <tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 text-sm">Loading audit logs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Add Resource Modal -->
+    <div id="addResourceModal" class="modal-overlay">
+        <div class="modal-content w-full max-w-3xl m-4">
+            <div class="p-8 border-b border-[#e5e3da] flex items-center justify-between">
+                <h2 class="text-xl font-bold text-[#1a1c1e]">Add New Resource</h2>
+                <button onclick="closeAddResourceModal()" class="text-slate-400 hover:text-[#1a1c1e]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <form id="addResourceForm" class="p-8">
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Resource Name *</label>
+                        <input type="text" name="name" required class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Resource Type *</label>
+                        <select name="resource_type" required class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm" onchange="toggleResourceFields(this.value)">
+                            <option value="">Select Type</option>
+                            <option value="physical">Physical</option>
+                            <option value="digital">Digital</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Category *</label>
+                        <select name="category" required class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                            <option value="">Select Category</option>
+                            <option value="room">Room/Hall</option>
+                            <option value="equipment">Equipment</option>
+                            <option value="lab">Laboratory</option>
+                            <option value="software">Software License</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Booking Mode *</label>
+                        <select name="booking_mode" required class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                            <option value="manual">Manual Approval (Faculty → Admin)</option>
+                            <option value="auto">Auto Approval (Configurable)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Description *</label>
+                    <textarea name="description" rows="3" required class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm"></textarea>
+                </div>
+
+                <div id="physicalFields" style="display: none;">
+                    <div class="grid grid-cols-3 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Building</label>
+                            <input type="text" name="building" class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Floor</label>
+                            <input type="text" name="floor" class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Capacity</label>
+                            <input type="number" name="capacity" class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="digitalFields" style="display: none;">
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Access URL</label>
+                            <input type="url" name="access_url" class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Concurrent Users</label>
+                            <input type="number" name="concurrent_users" class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" name="requires_faculty_approval" checked class="rounded">
+                        <span class="text-sm text-slate-600">Requires Faculty Approval</span>
+                    </label>
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" name="requires_admin_approval" checked class="rounded">
+                        <span class="text-sm text-slate-600">Requires Admin Approval</span>
+                    </label>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit" class="px-6 py-3 bg-[#15803d] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#166534] transition-colors">Create Resource</button>
+                    <button type="button" onclick="closeAddResourceModal()" class="px-6 py-3 border border-[#e5e3da] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest hover:bg-[#faf9f6] transition-colors">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allResources = [];
+        let allBookings = [];
+        let allLogs = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadResources();
+            loadBookings();
+            loadLogs();
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('[id^="tab"]').forEach(t => {
+                t.classList.remove('border-[#c5a059]', 'text-[#1a1c1e]');
+                t.classList.add('border-transparent', 'text-slate-500');
+            });
+
+            document.getElementById(tab + 'Tab').style.display = 'block';
+            const tabBtn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            tabBtn.classList.add('border-[#c5a059]', 'text-[#1a1c1e]');
+            tabBtn.classList.remove('border-transparent', 'text-slate-500');
+        }
+
+        async function loadResources() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:8000/api/auth/resources/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    allResources = await response.json();
+                    renderResources(allResources);
+                    document.getElementById('statTotal').textContent = allResources.length;
+                }
+            } catch (error) {
+                console.error('Error loading resources:', error);
+            }
+        }
+
+        function renderResources(resources) {
+            const tbody = document.getElementById('resourcesTableBody');
+            
+            if (resources.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 text-sm">No resources found. Click "Add Resource" to create one.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = resources.map(resource => `
+                <tr class="hover:bg-[#faf9f6] transition-colors">
+                    <td class="px-6 py-4 text-sm font-semibold text-[#1a1c1e]">${resource.resource_id}</td>
+                    <td class="px-6 py-4 text-sm font-semibold text-[#1a1c1e]">${resource.name}</td>
+                    <td class="px-6 py-4"><span class="badge badge-${resource.resource_type}">${resource.resource_type}</span></td>
+                    <td class="px-6 py-4 text-sm text-slate-600">${resource.category}</td>
+                    <td class="px-6 py-4 text-sm text-slate-600">${resource.location || resource.access_url || 'N/A'}</td>
+                    <td class="px-6 py-4"><span class="badge badge-${resource.status}">${resource.status}</span></td>
+                    <td class="px-6 py-4 text-xs text-slate-500">${resource.booking_mode === 'auto' ? 'Auto' : 'Manual'}</td>
+                    <td class="px-6 py-4"><button class="text-xs font-bold uppercase tracking-widest text-[#2d4a63] hover:text-[#1a1c1e]">View</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadBookings() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:8000/api/auth/bookings/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    allBookings = await response.json();
+                    renderBookings(allBookings);
+                    updateBookingStats(allBookings);
+                }
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+            }
+        }
+
+        function renderBookings(bookings) {
+            const tbody = document.getElementById('bookingsTableBody');
+            
+            if (bookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 text-sm">No bookings found</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = bookings.map(booking => {
+                const hasConflict = booking.has_conflict;
+                const rowClass = hasConflict ? 'conflict-warning' : '';
+                const approvalFlow = booking.requires_faculty_approval && booking.requires_admin_approval ? 'Faculty → Admin' : booking.requires_admin_approval ? 'Admin' : 'Auto';
+                
+                return `
+                    <tr class="hover:bg-[#faf9f6] transition-colors ${rowClass}">
+                        <td class="px-6 py-4 text-sm font-semibold text-[#1a1c1e]">${booking.booking_id}</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-[#1a1c1e]">${booking.resource_name}</td>
+                        <td class="px-6 py-4 text-sm text-slate-600">${booking.booked_by_name}</td>
+                        <td class="px-6 py-4 text-xs text-slate-500">${formatTime(booking.start_time)} - ${formatTime(booking.end_time)}</td>
+                        <td class="px-6 py-4"><span class="badge badge-${booking.status}">${booking.status.replace('_', ' ')}</span></td>
+                        <td class="px-6 py-4">${hasConflict ? '<span class="text-red-600 text-xs font-bold">⚠ CONFLICT</span>' : '<span class="text-green-600 text-xs">No conflict</span>'}</td>
+                        <td class="px-6 py-4 text-xs text-slate-500">${approvalFlow}</td>
+                        <td class="px-6 py-4"><button class="text-xs font-bold uppercase tracking-widest text-[#2d4a63] hover:text-[#1a1c1e]">View</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateBookingStats(bookings) {
+            document.getElementById('statPending').textContent = bookings.filter(b => b.status === 'pending').length;
+            
+            const today = new Date().toDateString();
+            document.getElementById('statToday').textContent = bookings.filter(b => {
+                const bookingDate = new Date(b.start_time).toDateString();
+                return bookingDate === today && b.status === 'approved';
+            }).length;
+
+            document.getElementById('statConflicts').textContent = bookings.filter(b => b.has_conflict).length;
+        }
+
+        async function loadLogs() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:8000/api/auth/resource-logs/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    allLogs = await response.json();
+                    renderLogs(allLogs);
+                    document.getElementById('statLogs').textContent = allLogs.length;
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+            }
+        }
+
+        function renderLogs(logs) {
+            const tbody = document.getElementById('logsTableBody');
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 text-sm">No logs found</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => `
+                <tr class="hover:bg-[#faf9f6] transition-colors">
+                    <td class="px-6 py-4 text-xs font-mono text-slate-600">${log.log_id}</td>
+                    <td class="px-6 py-4 text-xs text-slate-500">${formatDateTime(log.timestamp)}</td>
+                    <td class="px-6 py-4 text-xs font-semibold text-[#1a1c1e]">${log.action.replace('_', ' ')}</td>
+                    <td class="px-6 py-4 text-xs text-slate-600">${log.resource_name}</td>
+                    <td class="px-6 py-4 text-xs text-slate-600">${log.performed_by_name || 'System'}</td>
+                    <td class="px-6 py-4 text-xs text-slate-400">${log.ip_address || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function showAddResourceModal() {
+            document.getElementById('addResourceModal').classList.add('active');
+        }
+
+        function closeAddResourceModal() {
+            document.getElementById('addResourceModal').classList.remove('active');
+            document.getElementById('addResourceForm').reset();
+        }
+
+        function toggleResourceFields(type) {
+            document.getElementById('physicalFields').style.display = type === 'physical' ? 'block' : 'none';
+            document.getElementById('digitalFields').style.display = type === 'digital' ? 'block' : 'none';
+        }
+
+        document.getElementById('addResourceForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            data.requires_faculty_approval = formData.has('requires_faculty_approval');
+            data.requires_admin_approval = formData.has('requires_admin_approval');
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:8000/api/auth/resources/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Resource created successfully');
+                    closeAddResourceModal();
+                    loadResources();
+                    loadLogs();
+                } else {
+                    const error = await response.json();
+                    alert('Failed to create resource: ' + (error.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error creating resource:', error);
+                alert('Error creating resource');
+            }
+        });
+
+        function applyResourceFilters() {
+            const typeFilter = document.getElementById('filterType').value;
+            const categoryFilter = document.getElementById('filterCategory').value;
+            
+            let filtered = allResources;
+            
+            if (typeFilter !== 'all') {
+                filtered = filtered.filter(r => r.resource_type === typeFilter);
+            }
+            
+            if (categoryFilter !== 'all') {
+                filtered = filtered.filter(r => r.category === categoryFilter);
+            }
+            
+            renderResources(filtered);
+        }
+
+        function searchResources() {
+            const searchTerm = document.getElementById('searchResources').value.toLowerCase();
+            const filtered = allResources.filter(r => 
+                r.name.toLowerCase().includes(searchTerm) ||
+                r.resource_id.toLowerCase().includes(searchTerm)
+            );
+            renderResources(filtered);
+        }
+
+        function applyBookingFilters() {
+            const statusFilter = document.getElementById('filterBookingStatus').value;
+            const dateFilter = document.getElementById('filterDate').value;
+            
+            let filtered = allBookings;
+            
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(b => b.status === statusFilter);
+            }
+            
+            if (dateFilter) {
+                filtered = filtered.filter(b => {
+                    const bookingDate = new Date(b.start_time).toISOString().split('T')[0];
+                    return bookingDate === dateFilter;
+                });
+            }
+            
+            renderBookings(filtered);
+        }
+
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+    </script>
+
+</body>
+</html>

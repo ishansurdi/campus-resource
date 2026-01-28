@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAMPUSPHERE | Institutional Governance Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --stone-50: #faf9f6;
+            --stone-100: #f1f0ec;
+            --stone-200: #e5e3da;
+            --charcoal: #1a1c1e;
+            --muted-blue: #2d4a63;
+            --accent-gold: #c5a059;
+            --accent-teal: #3d706e;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--stone-50);
+            color: var(--charcoal);
+        }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        .reveal { opacity: 0; transform: translateY(15px); transition: all 0.8s ease-out; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        
+        /* Custom institutional scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone-50); }
+        ::-webkit-scrollbar-thumb { background: var(--stone-200); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted-blue); }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- 1. Fixed Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-[#faf9f6]/90 backdrop-blur-xl border-b border-[#e5e3da]">
+        <div class="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-12">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-[#1a1c1e] flex items-center justify-center rounded-sm">
+                        <div class="w-4 h-4 border-2 border-[#c5a059] rotate-45"></div>
+                    </div>
+                    <span class="text-xl font-bold tracking-[0.2em] text-[#1a1c1e]">CAMPUSPHERE</span>
+                </div>
+                <div class="hidden lg:flex items-center gap-8 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                    <a href="#" class="hover:text-[#1a1c1e] transition-colors">Infrastructure</a>
+                    <a href="#" class="hover:text-[#1a1c1e] transition-colors">Governance</a>
+                    <a href="#" class="hover:text-[#1a1c1e] transition-colors">Compliance</a>
+                    <a href="#" class="hover:text-[#1a1c1e] transition-colors">Audit</a>
+                </div>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="relative group">
+                    <button class="text-[12px] font-bold text-slate-500 hover:text-[#1a1c1e] transition-colors uppercase tracking-widest flex items-center gap-2">
+                        Login
+                        <svg class="w-3 h-3 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <!-- Dropdown Menu -->
+                    <div class="absolute top-full right-0 mt-2 w-48 bg-white border border-[#e5e3da] rounded-sm shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="py-2">
+                            <a href="/login.html?role=student" class="block px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e] hover:bg-[#f1f0ec] transition-colors border-l-2 border-transparent hover:border-[#2d4a63]">
+                                Student
+                            </a>
+                            <a href="/login.html?role=faculty" class="block px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e] hover:bg-[#f1f0ec] transition-colors border-l-2 border-transparent hover:border-[#3d706e]">
+                                Faculty
+                            </a>
+                            <a href="/login.html?role=admin" class="block px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e] hover:bg-[#f1f0ec] transition-colors border-l-2 border-transparent hover:border-[#c5a059]">
+                                Admin
+                            </a>
+                            <a href="/login.html?role=registrar" class="block px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e] hover:bg-[#f1f0ec] transition-colors border-l-2 border-transparent hover:border-slate-500">
+                                Registrar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <button class="text-[12px] font-bold bg-[#1a1c1e] text-white px-6 py-3 rounded-sm shadow-sm hover:bg-[#2d4a63] transition-all flex items-center gap-2 uppercase tracking-widest">
+                    Consultation
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 2. Hero Section -->
+    <section class="pt-48 pb-32 px-8">
+        <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
+            <div class="reveal active">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-sm bg-[#f1f0ec] border border-[#e5e3da] text-[10px] font-bold uppercase tracking-widest text-[#3d706e] mb-8 shadow-sm">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3d706e] opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-[#3d706e]"></span>
+                    </span>
+                    Institutional Standard v4.0
+                </div>
+                <h1 class="text-6xl font-bold leading-[1.05] text-[#1a1c1e] mb-8">
+                    Unified Governance for the <span class="italic font-serif text-[#2d4a63]">Modern Institution.</span>
+                </h1>
+                <p class="text-xl text-slate-500 mb-10 leading-relaxed max-w-lg">
+                    Orchestrate institutional policy, financial oversight, and multi-departmental collaboration within a single, cryptographically audited system of record.
+                </p>
+                <div class="flex flex-wrap items-center gap-5">
+                    <button class="bg-[#2d4a63] text-white px-10 py-5 rounded-sm font-bold text-[12px] uppercase tracking-[0.1em] hover:translate-y-[-2px] transition-all shadow-xl">
+                        Initiate Deployment
+                    </button>
+                    <button class="border border-[#e5e3da] text-[#1a1c1e] bg-white px-10 py-5 rounded-sm font-bold text-[12px] uppercase tracking-[0.1em] hover:bg-[#f1f0ec] hover:translate-y-[-2px] transition-all">
+                        Technical Specs
+                    </button>
+                </div>
+                <div class="mt-12 flex items-center gap-8 border-t border-[#e5e3da] pt-8">
+                    <div>
+                        <div class="text-2xl font-bold text-[#1a1c1e]">99.9%</div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Compliance Rate</div>
+                    </div>
+                    <div class="w-px h-8 bg-[#e5e3da]"></div>
+                    <div>
+                        <div class="text-2xl font-bold text-[#1a1c1e]">SOC2</div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Type II Verified</div>
+                    </div>
+                    <div class="w-px h-8 bg-[#e5e3da]"></div>
+                    <div>
+                        <div class="text-2xl font-bold text-[#1a1c1e]">FERPA</div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Data Compliant</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Abstract Dashboard -->
+            <div class="relative reveal active" style="transition-delay: 200ms;">
+                <div class="bg-white border border-[#e5e3da] rounded-xl shadow-2xl p-8 relative overflow-hidden group">
+                    <div class="flex items-center justify-between mb-8 border-b border-[#f1f0ec] pb-5">
+                        <div class="flex gap-4 items-center">
+                            <div class="w-3 h-3 rounded-full bg-red-400/20"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-400/20"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-400/20"></div>
+                            <div class="w-24 h-2 bg-[#f1f0ec] rounded ml-4"></div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-24 h-2 bg-[#f1f0ec] rounded"></div>
+                            <div class="w-8 h-8 rounded-full bg-[#f1f0ec] border border-[#e5e3da]"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-6 mb-8">
+                        <div class="h-32 rounded bg-[#faf9f6] border border-[#f1f0ec] p-5 relative overflow-hidden">
+                            <div class="w-1/2 h-2 bg-[#e5e3da] rounded mb-6"></div>
+                            <div class="text-2xl font-bold text-[#2d4a63]">12</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Active Audits</div>
+                            <div class="absolute bottom-0 right-0 w-12 h-12 bg-[#2d4a63]/5 rounded-tl-full"></div>
+                        </div>
+                        <div class="h-32 rounded bg-[#faf9f6] border border-[#f1f0ec] p-5 relative overflow-hidden">
+                            <div class="w-1/2 h-2 bg-[#e5e3da] rounded mb-6"></div>
+                            <div class="text-2xl font-bold text-[#3d706e]">94%</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Integrity Score</div>
+                            <div class="absolute bottom-0 right-0 w-12 h-12 bg-[#3d706e]/5 rounded-tl-full"></div>
+                        </div>
+                        <div class="h-32 rounded bg-[#faf9f6] border border-[#f1f0ec] p-5 relative overflow-hidden">
+                            <div class="w-1/2 h-2 bg-[#e5e3da] rounded mb-6"></div>
+                            <div class="text-2xl font-bold text-[#c5a059]">$2.4M</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Funds Managed</div>
+                            <div class="absolute bottom-0 right-0 w-12 h-12 bg-[#c5a059]/5 rounded-tl-full"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between h-4 bg-[#f1f0ec]/50 rounded-sm w-full px-3">
+                            <div class="w-1/4 h-1 bg-[#e5e3da] rounded"></div>
+                            <div class="w-4 h-1 bg-[#2d4a63] rounded"></div>
+                        </div>
+                        <div class="flex items-center justify-between h-4 bg-[#f1f0ec]/50 rounded-sm w-full px-3">
+                            <div class="w-1/3 h-1 bg-[#e5e3da] rounded"></div>
+                            <div class="w-4 h-1 bg-[#e5e3da] rounded"></div>
+                        </div>
+                        <div class="mt-4 p-6 border border-[#f1f0ec] rounded bg-[#faf9f6] relative">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="w-20 h-2 bg-[#2d4a63]/20 rounded"></div>
+                                <div class="w-10 h-2 bg-[#f1f0ec] rounded"></div>
+                            </div>
+                            <div class="h-20 flex items-end gap-2">
+                                <div class="flex-1 bg-[#2d4a63]/10 h-12 rounded-t-sm"></div>
+                                <div class="flex-1 bg-[#2d4a63]/20 h-16 rounded-t-sm"></div>
+                                <div class="flex-1 bg-[#2d4a63]/40 h-20 rounded-t-sm"></div>
+                                <div class="flex-1 bg-[#2d4a63]/10 h-10 rounded-t-sm"></div>
+                                <div class="flex-1 bg-[#2d4a63]/30 h-14 rounded-t-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating Badge Widget -->
+                    <div class="absolute -bottom-4 -left-4 w-32 h-32 bg-white/40 backdrop-blur-md border border-[#e5e3da] rounded-full flex items-center justify-center -rotate-12 hover:rotate-0 transition-transform duration-500 cursor-default">
+                        <div class="text-center">
+                            <div class="text-[10px] font-bold text-[#c5a059] uppercase tracking-widest">Global</div>
+                            <div class="text-xs font-bold text-[#1a1c1e]">Verified</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Institutional Problem Strip -->
+    <section class="bg-white border-y border-[#e5e3da] py-20 px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid md:grid-cols-4 gap-12">
+                <div class="space-y-4 group">
+                    <div class="w-8 h-1 bg-[#3d706e] group-hover:w-16 transition-all"></div>
+                    <h4 class="font-bold text-sm uppercase tracking-widest text-[#1a1c1e]">Siloed Data</h4>
+                    <p class="text-[13px] text-slate-500 leading-relaxed">Centralize fragmented spreadsheets into a unified cryptographic ledger.</p>
+                </div>
+                <div class="space-y-4 group">
+                    <div class="w-8 h-1 bg-[#c5a059] group-hover:w-16 transition-all"></div>
+                    <h4 class="font-bold text-sm uppercase tracking-widest text-[#1a1c1e]">Opacity</h4>
+                    <p class="text-[13px] text-slate-500 leading-relaxed">Replace hidden approval loops with transparent real-time lineage.</p>
+                </div>
+                <div class="space-y-4 group">
+                    <div class="w-8 h-1 bg-[#2d4a63] group-hover:w-16 transition-all"></div>
+                    <h4 class="font-bold text-sm uppercase tracking-widest text-[#1a1c1e]">Conflict</h4>
+                    <p class="text-[13px] text-slate-500 leading-relaxed">Systematically resolve cross-departmental scheduling friction.</p>
+                </div>
+                <div class="space-y-4 group">
+                    <div class="w-8 h-1 bg-slate-300 group-hover:w-16 transition-all"></div>
+                    <h4 class="font-bold text-sm uppercase tracking-widest text-[#1a1c1e]">Liability</h4>
+                    <p class="text-[13px] text-slate-500 leading-relaxed">Mitigate audit risk through hard-coded compliance frameworks.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Capability Architecture Grid -->
+    <section class="py-32 px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-8">
+                <div>
+                    <span class="text-[10px] font-bold text-[#c5a059] uppercase tracking-[0.4em] mb-4 block">Infrastructure</span>
+                    <h2 class="text-4xl font-bold text-[#1a1c1e] mb-4 leading-tight">Core Governance Architecture</h2>
+                    <div class="h-1 w-20 bg-[#c5a059]"></div>
+                </div>
+                <p class="max-w-md text-sm text-slate-500 italic">
+                    Designed to withstand rigorous regulatory scrutiny while maintaining fluid operational efficiency for academic units.
+                </p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-10">
+                <!-- Card 1 -->
+                <div class="p-10 bg-white border border-[#e5e3da] rounded-sm hover:border-[#2d4a63] hover:translate-y-[-6px] transition-all duration-500 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <span class="text-6xl font-bold font-serif">01</span>
+                    </div>
+                    <div class="mb-8 opacity-40 group-hover:opacity-100 transition-opacity text-[#2d4a63]">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Policy Enforcement</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6">Encode institutional bylaws into automated workflows that prevent procedural violations before they occur.</p>
+                    <ul class="text-[11px] font-bold text-slate-400 space-y-2">
+                        <li class="flex items-center gap-2 tracking-widest uppercase"><span class="w-1 h-1 bg-[#c5a059] rounded-full"></span> Hard-coded Bylaws</li>
+                        <li class="flex items-center gap-2 tracking-widest uppercase"><span class="w-1 h-1 bg-[#c5a059] rounded-full"></span> Automated Gating</li>
+                    </ul>
+                </div>
+                <!-- Card 2 -->
+                <div class="p-10 bg-white border border-[#e5e3da] rounded-sm hover:border-[#2d4a63] hover:translate-y-[-6px] transition-all duration-500 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <span class="text-6xl font-bold font-serif">02</span>
+                    </div>
+                    <div class="mb-8 opacity-40 group-hover:opacity-100 transition-opacity text-[#2d4a63]">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Fiscal Accountability</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6">Integrated budget management with granular tracking of fund allocation, spending, and treasury verification.</p>
+                    <ul class="text-[11px] font-bold text-slate-400 space-y-2">
+                        <li class="flex items-center gap-2 tracking-widest uppercase"><span class="w-1 h-1 bg-[#c5a059] rounded-full"></span> Multi-sig Approval</li>
+                        <li class="flex items-center gap-2 tracking-widest uppercase"><span class="w-1 h-1 bg-[#c5a059] rounded-full"></span> Receipt Lineage</li>
+                    </ul>
+                </div>
+                <!-- Card 3 -->
+                <div class="p-10 bg-white border border-[#e5e3da] rounded-sm hover:border-[#2d4a63] hover:translate-y-[-6px] transition-all duration-500 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <span class="text-6xl font-bold font-serif">03</span>
+                    </div>
+                    <div class="mb-8 opacity-40 group-hover:opacity-100 transition-opacity text-[#2d4a63]">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Resource Optimization</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6">Centralized inventory and facility scheduling ensuring maximum utilization of campus assets.</p>
+                    <ul class="text-[11px] font-bold text-slate-400 space-y-2">
+                        <li class="flex items-center gap-2 tracking-widest uppercase"><span class="w-1 h-1 bg-[#c5a059] rounded-full"></span> Conflict Avoidance</li>
+                        <li class="flex items-center gap-2 tracking-widest uppercase"><span class="w-1 h-1 bg-[#c5a059] rounded-full"></span> Asset Lifecycle</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Governance Workflow Timeline -->
+    <section class="bg-[#f1f0ec] py-32 px-8 overflow-hidden">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-6 tracking-tight text-[#1a1c1e]">The Lifecycle of a Decision</h2>
+            <p class="text-center text-slate-400 text-sm mb-24 max-w-xl mx-auto">From student initiative to institutional record: our immutable pipeline ensures 100% accountability at every stage.</p>
+            
+            <div class="relative flex flex-col md:flex-row justify-between items-center gap-12">
+                <!-- Connector Line -->
+                <div class="absolute top-1/2 left-0 w-full h-px bg-[#e5e3da] hidden md:block -translate-y-12"></div>
+                
+                <div class="relative z-10 flex flex-col items-center text-center max-w-[160px] reveal">
+                    <div class="w-16 h-16 rounded-full bg-white border-2 border-[#e5e3da] flex items-center justify-center mb-6 text-[#1a1c1e] font-bold shadow-sm group-hover:border-[#2d4a63] transition-colors">01</div>
+                    <h4 class="font-bold text-sm mb-2 uppercase tracking-wide">Submission</h4>
+                    <div class="px-3 py-1 bg-white border border-[#e5e3da] text-[9px] font-bold text-slate-400 uppercase tracking-tighter rounded-full mb-3">T-minus 0h</div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed uppercase tracking-tighter">Drafting & Initial Policy Check</p>
+                </div>
+                <div class="relative z-10 flex flex-col items-center text-center max-w-[160px] reveal">
+                    <div class="w-16 h-16 rounded-full bg-white border-2 border-[#e5e3da] flex items-center justify-center mb-6 text-[#1a1c1e] font-bold shadow-sm">02</div>
+                    <h4 class="font-bold text-sm mb-2 uppercase tracking-wide">Review</h4>
+                    <div class="px-3 py-1 bg-white border border-[#e5e3da] text-[9px] font-bold text-slate-400 uppercase tracking-tighter rounded-full mb-3">T-plus 24h</div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed uppercase tracking-tighter">Peer & Faculty Evaluation</p>
+                </div>
+                <div class="relative z-10 flex flex-col items-center text-center max-w-[160px] reveal">
+                    <div class="w-16 h-16 rounded-full bg-white border-2 border-[#2d4a63] flex items-center justify-center mb-6 text-[#2d4a63] font-bold shadow-md ring-8 ring-[#2d4a63]/5">03</div>
+                    <h4 class="font-bold text-sm mb-2 uppercase tracking-wide">Verification</h4>
+                    <div class="px-3 py-1 bg-[#2d4a63] text-[9px] font-bold text-white uppercase tracking-tighter rounded-full mb-3">Active</div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed uppercase tracking-tighter font-medium">Budget & Risk Assessment</p>
+                </div>
+                <div class="relative z-10 flex flex-col items-center text-center max-w-[160px] reveal">
+                    <div class="w-16 h-16 rounded-full bg-white border-2 border-[#e5e3da] flex items-center justify-center mb-6 text-[#1a1c1e] font-bold shadow-sm">04</div>
+                    <h4 class="font-bold text-sm mb-2 uppercase tracking-wide">Resolution</h4>
+                    <div class="px-3 py-1 bg-white border border-[#e5e3da] text-[9px] font-bold text-slate-400 uppercase tracking-tighter rounded-full mb-3">Pending</div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed uppercase tracking-tighter">Executive Authorization</p>
+                </div>
+                <div class="relative z-10 flex flex-col items-center text-center max-w-[160px] reveal">
+                    <div class="w-16 h-16 rounded-full bg-[#1a1c1e] border-2 border-[#1a1c1e] flex items-center justify-center mb-6 text-white font-bold shadow-xl">05</div>
+                    <h4 class="font-bold text-sm mb-2 uppercase tracking-wide text-[#1a1c1e]">Execution</h4>
+                    <div class="px-3 py-1 bg-[#1a1c1e] text-[9px] font-bold text-white uppercase tracking-tighter rounded-full mb-3">Final</div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed uppercase tracking-tighter">Permanent Ledger Entry</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Compliance + Audit Panel -->
+    <section class="py-32 px-8 bg-white overflow-hidden">
+        <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-24 items-center">
+            <div class="reveal">
+                <span class="text-[#c5a059] font-bold text-xs uppercase tracking-[0.4em] mb-4 block">Traceability Matrix</span>
+                <h2 class="text-4xl font-bold text-[#1a1c1e] mb-8 leading-tight">Uncompromising Standards for Institutional Integrity</h2>
+                <div class="space-y-12">
+                    <div class="flex gap-8 group">
+                        <div class="w-1.5 h-16 bg-[#2d4a63] flex-shrink-0 group-hover:bg-[#c5a059] transition-colors"></div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-3">Cryptographic Hashing</h4>
+                            <p class="text-sm text-slate-500 leading-relaxed">Every state change, document upload, and approval signature is hash-linked to ensure absolute data integrity during federal and private accreditation reviews.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-8 group">
+                        <div class="w-1.5 h-16 bg-[#3d706e] flex-shrink-0 group-hover:bg-[#c5a059] transition-colors"></div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-3">Automated Policy Gating</h4>
+                            <p class="text-sm text-slate-500 leading-relaxed">System-enforced rules prevent any financial disbursement until multi-party verification signatures are captured in the correct legal sequence.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="relative reveal group">
+                <!-- Stacked Document Mockup -->
+                <div class="absolute -top-12 -right-12 w-full h-full border border-[#e5e3da] bg-[#faf9f6] rounded-sm -rotate-3 transition-transform group-hover:-rotate-1 duration-700"></div>
+                <div class="relative bg-white border border-[#e5e3da] p-12 rounded-sm shadow-2xl">
+                    <div class="flex justify-between border-b border-[#f1f0ec] pb-8 mb-10">
+                        <div>
+                            <div class="text-[9px] font-bold uppercase tracking-[0.2em] text-[#c5a059] mb-3">Institutional Audit</div>
+                            <div class="text-lg font-bold text-[#1a1c1e] font-serif">ID: ARC-2944-X-GLOBAL</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="px-4 py-1.5 bg-[#3d706e]/10 text-[#3d706e] text-[10px] font-bold uppercase tracking-widest rounded-sm flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#3d706e] animate-pulse"></span> Verified
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div class="relative pl-8 border-l border-[#f1f0ec]">
+                            <div class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-[#2d4a63]"></div>
+                            <div class="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest mb-2">
+                                <span class="text-slate-400">05.12.24 | 14:02</span>
+                                <span class="text-[#2d4a63]">Provost Approval</span>
+                            </div>
+                            <div class="h-1.5 bg-[#f1f0ec] rounded-full w-full"></div>
+                        </div>
+                        
+                        <div class="relative pl-8 border-l border-[#f1f0ec]">
+                            <div class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-[#c5a059]"></div>
+                            <div class="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest mb-2">
+                                <span class="text-slate-400">05.12.24 | 16:45</span>
+                                <span class="text-[#c5a059]">Finance Verification</span>
+                            </div>
+                            <div class="h-1.5 bg-[#f1f0ec] rounded-full w-4/5"></div>
+                        </div>
+
+                        <div class="mt-8 p-5 bg-[#faf9f6] border border-[#f1f0ec] rounded-sm">
+                            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">Immutability Proof</div>
+                            <div class="font-mono text-[9px] text-[#2d4a63] break-all leading-relaxed bg-white p-3 border border-[#f1f0ec]">
+                                SHA256: 8f7129c9e8236d8d88e018693006d6b83f4f...8f2a44
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. Role Access Matrix -->
+    <section class="bg-[#1a1c1e] py-32 px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-24">
+                <span class="text-[#c5a059] font-bold text-[10px] uppercase tracking-[0.5em] mb-4 block">Identity Architecture</span>
+                <h2 class="text-3xl font-bold text-white tracking-tight">Granular Permission Mapping</h2>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                <!-- Role Card -->
+                <div class="group relative">
+                    <div class="p-8 border border-white/10 rounded-sm hover:border-white/40 hover:bg-white/5 transition-all text-center">
+                        <div class="w-12 h-12 border border-white/20 rounded-sm flex items-center justify-center mx-auto mb-6 text-white text-sm font-bold group-hover:bg-[#2d4a63] group-hover:border-transparent transition-all">S</div>
+                        <div class="text-[11px] font-bold text-white uppercase tracking-widest mb-2">SysAdmin</div>
+                        <div class="h-px w-6 bg-white/20 mx-auto group-hover:w-10 transition-all"></div>
+                    </div>
+                </div>
+                <div class="group relative">
+                    <div class="p-8 border border-white/10 rounded-sm hover:border-white/40 hover:bg-white/5 transition-all text-center">
+                        <div class="w-12 h-12 border border-white/20 rounded-sm flex items-center justify-center mx-auto mb-6 text-white text-sm font-bold group-hover:bg-[#3d706e] group-hover:border-transparent transition-all">F</div>
+                        <div class="text-[11px] font-bold text-white uppercase tracking-widest mb-2">Faculty</div>
+                        <div class="h-px w-6 bg-white/20 mx-auto group-hover:w-10 transition-all"></div>
+                    </div>
+                </div>
+                <div class="group relative">
+                    <div class="p-8 border border-white/10 rounded-sm hover:border-white/40 hover:bg-white/5 transition-all text-center">
+                        <div class="w-12 h-12 border border-white/20 rounded-sm flex items-center justify-center mx-auto mb-6 text-white text-sm font-bold group-hover:bg-[#c5a059] group-hover:border-transparent transition-all">P</div>
+                        <div class="text-[11px] font-bold text-white uppercase tracking-widest mb-2">Provost</div>
+                        <div class="h-px w-6 bg-white/20 mx-auto group-hover:w-10 transition-all"></div>
+                    </div>
+                </div>
+                <div class="group relative">
+                    <div class="p-8 border border-white/10 rounded-sm hover:border-white/40 hover:bg-white/5 transition-all text-center">
+                        <div class="w-12 h-12 border border-white/20 rounded-sm flex items-center justify-center mx-auto mb-6 text-white text-sm font-bold group-hover:bg-[#2d4a63] group-hover:border-transparent transition-all">T</div>
+                        <div class="text-[11px] font-bold text-white uppercase tracking-widest mb-2">Treasury</div>
+                        <div class="h-px w-6 bg-white/20 mx-auto group-hover:w-10 transition-all"></div>
+                    </div>
+                </div>
+                <div class="group relative">
+                    <div class="p-8 border border-white/10 rounded-sm hover:border-white/40 hover:bg-white/5 transition-all text-center">
+                        <div class="w-12 h-12 border border-white/20 rounded-sm flex items-center justify-center mx-auto mb-6 text-white text-sm font-bold group-hover:bg-slate-500 group-hover:border-transparent transition-all">D</div>
+                        <div class="text-[11px] font-bold text-white uppercase tracking-widest mb-2">Dean</div>
+                        <div class="h-px w-6 bg-white/20 mx-auto group-hover:w-10 transition-all"></div>
+                    </div>
+                </div>
+                <div class="group relative">
+                    <div class="p-8 border border-white/10 rounded-sm hover:border-white/40 hover:bg-white/5 transition-all text-center">
+                        <div class="w-12 h-12 border border-white/20 rounded-sm flex items-center justify-center mx-auto mb-6 text-white text-sm font-bold group-hover:bg-slate-700 group-hover:border-transparent transition-all">R</div>
+                        <div class="text-[11px] font-bold text-white uppercase tracking-widest mb-2">Registrar</div>
+                        <div class="h-px w-6 bg-white/20 mx-auto group-hover:w-10 transition-all"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-20 p-8 border border-white/5 bg-white/[0.02] text-center text-white/40 text-[10px] font-bold uppercase tracking-[0.3em]">
+                System supports recursive sub-role mapping and custom departmental inheritance hierarchies.
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. Visual Trust Section -->
+    <section class="py-32 px-8 text-center bg-white border-b border-[#e5e3da]">
+        <div class="max-w-4xl mx-auto py-16">
+            <h3 class="text-3xl italic font-serif text-[#1a1c1e] mb-10 leading-snug">
+                "CAMPUSPHERE represents the evolution of institutional administration—where technology serves as the foundation for <span class="text-[#2d4a63] not-italic font-bold tracking-tight">accountability, audit, and excellence."</span>
+            </h3>
+            <div class="flex items-center justify-center gap-4 mb-8">
+                <div class="w-12 h-px bg-[#e5e3da]"></div>
+                <div class="text-[11px] font-bold uppercase tracking-[0.4em] text-[#c5a059]">The Governance Standard</div>
+                <div class="w-12 h-px bg-[#e5e3da]"></div>
+            </div>
+            
+            <!-- Accreditation Grid (Subtle) -->
+            <div class="flex flex-wrap justify-center items-center gap-12 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-widest">
+                    <div class="w-6 h-6 border-2 border-slate-900 rounded-full"></div> ISO 27001
+                </div>
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-widest">
+                    <div class="w-6 h-6 border-2 border-slate-900 rounded-full"></div> SOC 2 TYPE II
+                </div>
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-widest">
+                    <div class="w-6 h-6 border-2 border-slate-900 rounded-full"></div> HIPAA READY
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. Final CTA -->
+    <section class="py-40 px-8 bg-[#faf9f6] relative overflow-hidden">
+        <!-- Abstract background pattern -->
+        <div class="absolute inset-0 opacity-[0.03] pointer-events-none select-none overflow-hidden">
+            <div class="text-[300px] font-bold text-[#1a1c1e] absolute -top-40 -left-20">GOV</div>
+        </div>
+        
+        <div class="max-w-4xl mx-auto text-center relative z-10 reveal">
+            <h2 class="text-5xl font-bold text-[#1a1c1e] mb-10 tracking-tight leading-tight">Evolve Your Institutional <br/>Infrastructure.</h2>
+            <p class="text-lg text-slate-500 mb-14 leading-relaxed max-w-2xl mx-auto">
+                Discover why 50+ leading modern universities trust CAMPUSPHERE to secure their governance, financial operations, and institutional lineage.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+                <button class="w-full sm:w-auto bg-[#1a1c1e] text-white px-14 py-6 rounded-sm font-bold text-[12px] uppercase tracking-[0.2em] hover:bg-[#2d4a63] hover:translate-y-[-3px] transition-all shadow-2xl">
+                    SCHEDULE BRIEFING
+                </button>
+                <button class="w-full sm:w-auto border border-[#e5e3da] bg-white text-[#1a1c1e] px-14 py-6 rounded-sm font-bold text-[12px] uppercase tracking-[0.2em] hover:bg-[#f1f0ec] hover:translate-y-[-3px] transition-all">
+                    TECHNICAL WHITE PAPER
+                </button>
+            </div>
+            <div class="mt-16 text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
+                Average setup time: 14 business days.
+            </div>
+        </div>
+    </section>
+
+    <!-- 10. Footer -->
+    <footer class="bg-white border-t border-[#e5e3da] pt-24 pb-12 px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid md:grid-cols-4 gap-20 mb-20">
+                <div class="col-span-1 md:col-span-1">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="w-8 h-8 bg-[#1a1c1e] flex items-center justify-center rounded-sm">
+                            <div class="w-4 h-4 border-2 border-[#c5a059] rotate-45"></div>
+                        </div>
+                        <span class="text-xl font-bold tracking-[0.2em] text-[#1a1c1e]">CAMPUSPHERE</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 leading-relaxed uppercase tracking-widest font-medium mb-8">
+                        The Enterprise Standard for University Governance and Compliance Operations. 
+                    </p>
+                    <div class="flex gap-4">
+                        <div class="w-8 h-8 rounded-sm bg-[#f1f0ec] hover:bg-[#e5e3da] transition-colors cursor-pointer"></div>
+                        <div class="w-8 h-8 rounded-sm bg-[#f1f0ec] hover:bg-[#e5e3da] transition-colors cursor-pointer"></div>
+                        <div class="w-8 h-8 rounded-sm bg-[#f1f0ec] hover:bg-[#e5e3da] transition-colors cursor-pointer"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h5 class="text-[10px] font-bold uppercase tracking-[0.3em] text-[#c5a059] mb-10">Capabilities</h5>
+                    <ul class="space-y-5 text-[12px] font-bold text-[#1a1c1e] uppercase tracking-[0.1em]">
+                        <li><a href="#" class="hover:text-[#2d4a63] transition-colors">Digital Governance</a></li>
+                        <li><a href="#" class="hover:text-[#2d4a63] transition-colors">Treasury Audit</a></li>
+                        <li><a href="#" class="hover:text-[#2d4a63] transition-colors">Asset Management</a></li>
+                        <li><a href="#" class="hover:text-[#2d4a63] transition-colors">Role Mapping</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h5 class="text-[10px] font-bold uppercase tracking-[0.3em] text-[#c5a059] mb-10">Resources</h5>
+                    <ul class="space-y-5 text-[12px] font-bold text-[#1a1c1e] uppercase tracking-[0.1em]">
+                        <li><a href="#" class="hover:text-[#2d4a63] transition-colors">Security Briefing</a></li>
+                        <li><a href="#" class="hover:text-[#2d4a63] transition-colors">Compliance Docs</a></li>
+                        <li><a href="#" class="hover:text-[#2d4a63] transition-colors">FERPA Guide</a></li>
+                        <li><a href="#" class="hover:text-[#2d4a63] transition-colors">API Reference</a></li>
+                    </ul>
+                </div>
+
+                <div class="p-8 bg-[#faf9f6] border border-[#f1f0ec] rounded-sm">
+                    <h5 class="text-[10px] font-bold uppercase tracking-[0.3em] text-[#1a1c1e] mb-6">Briefing Signup</h5>
+                    <p class="text-[11px] text-slate-400 mb-6 font-medium">Monthly updates on university governance trends.</p>
+                    <div class="relative">
+                        <input type="text" placeholder="UNIVERSITY EMAIL" class="w-full bg-white border border-[#e5e3da] px-4 py-3 text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:border-[#2d4a63] rounded-sm">
+                        <button class="absolute right-2 top-2 text-[#2d4a63] hover:text-[#1a1c1e]">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-12 border-t border-[#f1f0ec] flex flex-col md:flex-row justify-between items-center gap-8 text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400">
+                <div class="flex items-center gap-4">
+                    <span>&copy; 2024 CAMPUSPHERE INFRASTRUCTURE.</span>
+                    <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                    <span>ALL RIGHTS RESERVED.</span>
+                </div>
+                <div class="flex items-center gap-8">
+                    <a href="#" class="hover:text-[#1a1c1e]">PRIVACY</a>
+                    <a href="#" class="hover:text-[#1a1c1e]">SECURITY</a>
+                    <a href="#" class="hover:text-[#1a1c1e]">ACCESSIBILITY</a>
+                    <span class="text-[#3d706e]">SYSTEM: OPERATIONAL</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Intersection Observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        
+        // Add reveal class to all major sections dynamically
+        document.querySelectorAll('section > div').forEach(div => {
+            div.classList.add('reveal');
+            observer.observe(div);
+        });
+    </script>
+</body>
+</html>
