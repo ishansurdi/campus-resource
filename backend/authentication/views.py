@@ -208,8 +208,31 @@ def update_profile_view(request):
 @permission_classes([AllowAny])
 def health_check(request):
     """
-    Health check endpoint.
+    Health check endpoint - also ensures admin user exists.
     """
+    # Try to ensure admin exists
+    try:
+        from authentication.models import AdminUser
+        username = 'admin'
+        
+        if not AdminUser.objects.filter(username=username).exists():
+            AdminUser.objects.create_user(
+                username=username,
+                email='admin@campusphere.edu',
+                password='Admin@123',
+                first_name='System',
+                last_name='Administrator',
+                role='admin',
+                employee_id='EMP001',
+                department='Information Technology',
+                is_staff=True,
+                is_superuser=True,
+                is_active=True,
+                two_factor_enabled=False
+            )
+    except Exception:
+        pass  # Silently continue if admin creation fails
+    
     return Response({
         'status': 'healthy',
         'message': 'CAMPUSPHERE API is operational'
