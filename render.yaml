@@ -13,7 +13,7 @@ services:
     env: python
     region: singapore
     plan: free
-    buildCommand: cd backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    buildCommand: cd backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py ensure_admin
     startCommand: cd backend && gunicorn campusphere.wsgi:application
     envVars:
       - key: PYTHON_VERSION
