@@ -62,6 +62,8 @@
             border-bottom-color: #2d4a63;
         }
     </style>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
 </head>
 <body class="antialiased bg-[#faf9f6]">
 
@@ -458,7 +460,7 @@
         async function loadUserInfo() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/profile/', {
+                const response = await fetch(getApiUrl('/api/auth/profile/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -522,7 +524,7 @@
         async function loadClubMemberships() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/my-clubs/', {
+                const response = await fetch(getApiUrl('/api/auth/my-clubs/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -622,7 +624,7 @@
 
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch(`http://localhost:8000/api/auth/clubs/${activeClubId}/members/`, {
+                const response = await fetch(getApiUrl(`/api/auth/clubs/${activeClubId}/members/`), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -706,7 +708,7 @@
         async function loadFacultyAdvisors() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/my-clubs/', {
+                const response = await fetch(getApiUrl('/api/auth/my-clubs/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'

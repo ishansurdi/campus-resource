@@ -58,6 +58,8 @@
             display: flex;
         }
     </style>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
 </head>
 <body class="antialiased bg-[#faf9f6]">
 
@@ -280,7 +282,7 @@
             
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/profile/', {
+                const response = await fetch(getApiUrl('/api/auth/profile/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -308,7 +310,7 @@
         async function loadApplications() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/club-applications/my/', {
+                const response = await fetch(getApiUrl('/api/auth/club-applications/my/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -521,7 +523,7 @@
 
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/club-applications/submit/', {
+                const response = await fetch(getApiUrl('/api/auth/club-applications/submit/'), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

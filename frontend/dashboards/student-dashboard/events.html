@@ -59,7 +59,7 @@
         async function loadClubs() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/clubs/all/', {
+                const response = await fetch(getApiUrl('/api/auth/clubs/all/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -89,7 +89,7 @@
         async function loadAllEvents() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/events/', {
+                const response = await fetch(getApiUrl('/api/auth/events/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -111,7 +111,7 @@
         async function loadMyRegistrations() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/event-registrations/', {
+                const response = await fetch(getApiUrl('/api/auth/event-registrations/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -130,7 +130,7 @@
         async function loadMyAttendances() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/my-event-attendances/', {
+                const response = await fetch(getApiUrl('/api/auth/my-event-attendances/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -149,7 +149,7 @@
         async function loadMyCertificates() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/my-certificates/', {
+                const response = await fetch(getApiUrl('/api/auth/my-certificates/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -168,7 +168,7 @@
         async function loadMyApplications() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/my-event-applications/', {
+                const response = await fetch(getApiUrl('/api/auth/my-event-applications/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -508,7 +508,7 @@
         async function viewEventDetails(eventId) {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch(`http://localhost:8000/api/auth/events/${eventId}/`, {
+                const response = await fetch(getApiUrl(`/api/auth/events/${eventId}/`), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -642,7 +642,7 @@
         async function registerForEvent(eventId) {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/event-registrations/', {
+                const response = await fetch(getApiUrl('/api/auth/event-registrations/'), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -686,7 +686,7 @@
             
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch(`http://localhost:8000/api/auth/event-feedback/${attendanceId}/`, {
+                const response = await fetch(getApiUrl(`/api/auth/event-feedback/${attendanceId}/`), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -783,6 +783,8 @@
             overflow: hidden;
         }
     </style>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
 </head>
 <body class="antialiased bg-[#faf9f6]">
 
@@ -1376,7 +1378,7 @@
             };
 
             try {
-                const response = await fetch('http://localhost:8000/api/auth/event-application/submit/', {
+                const response = await fetch(getApiUrl('/api/auth/event-application/submit/'), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

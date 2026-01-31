@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>University Profile | CAMPUSPHERE</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
     <script src="../auth.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -475,7 +477,7 @@
             formData.append('folder', assetType.toLowerCase());
             
             try {
-                const res = await fetch('/api/auth/university/upload/', {
+                const res = await fetch(getApiUrl('/api/auth/university/upload/'), {
                     method: 'POST',
                     headers: { 
                         'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}` 

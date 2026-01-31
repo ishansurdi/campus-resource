@@ -24,7 +24,7 @@
         async function loadUserProfile() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/profile/', {
+                const response = await fetch(getApiUrl('/api/auth/profile/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -61,7 +61,7 @@
         async function loadPendingFacultyApprovals() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/event-applications/pending-faculty/', {
+                const response = await fetch(getApiUrl('/api/auth/event-applications/pending-faculty/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -84,7 +84,7 @@
         async function loadPendingAdminApprovals() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://localhost:8000/api/auth/event-applications/pending-admin/', {
+                const response = await fetch(getApiUrl('/api/auth/event-applications/pending-admin/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -334,8 +334,8 @@
             try {
                 const token = localStorage.getItem('access_token');
                 const endpoint = userRole === 'faculty' 
-                    ? `http://localhost:8000/api/auth/event-applications/${eventId}/faculty-approve/`
-                    : `http://localhost:8000/api/auth/event-applications/${eventId}/admin-approve/`;
+                    ? getApiUrl(`/api/auth/event-applications/${eventId}/faculty-approve/`)
+                    : getApiUrl(`/api/auth/event-applications/${eventId}/admin-approve/`);
                 
                 const response = await fetch(endpoint, {
                     method: 'POST',
@@ -384,8 +384,8 @@
             try {
                 const token = localStorage.getItem('access_token');
                 const endpoint = userRole === 'faculty' 
-                    ? `http://localhost:8000/api/auth/event-applications/${eventId}/faculty-reject/`
-                    : `http://localhost:8000/api/auth/event-applications/${eventId}/admin-reject/`;
+                    ? getApiUrl(`/api/auth/event-applications/${eventId}/faculty-reject/`)
+                    : getApiUrl(`/api/auth/event-applications/${eventId}/admin-reject/`);
                 
                 const response = await fetch(endpoint, {
                     method: 'POST',
@@ -446,6 +446,8 @@
             logout();
         }
     </script>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
 </head>
 <body class="bg-[#f1f0ec] font-sans antialiased">
     <div class="min-h-screen p-8">

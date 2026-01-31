@@ -43,6 +43,8 @@
         .priority-medium { border-left: 3px solid #f59e0b; }
         .priority-high { border-left: 3px solid #dc2626; }
     </style>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
 </head>
 <body class="antialiased bg-[#faf9f6]" onload="protectPage('admin')">
 
@@ -260,13 +262,13 @@
                 
                 // Load both pending event applications and club applications
                 const [eventsResponse, clubAppsResponse] = await Promise.all([
-                    fetch('http://localhost:8000/api/auth/event-applications/pending-admin/', {
+                    fetch(getApiUrl('/api/auth/event-applications/pending-admin/'), {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         }
                     }),
-                    fetch('http://localhost:8000/api/auth/club-applications/pending-admin/', {
+                    fetch(getApiUrl('/api/auth/club-applications/pending-admin/'), {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
@@ -516,7 +518,7 @@
                 // Determine the correct endpoint based on type
                 let url;
                 if (approval.request_type === 'event') {
-                    url = `http://localhost:8000/api/auth/event-applications/${selectedApprovalId}/admin-approve/`;
+                    url = getApiUrl(`/api/auth/event-applications/${selectedApprovalId}/admin-approve/`);
                 } else {
                     // Club application endpoint (when implemented)
                     alert('Club application approval not yet implemented');
@@ -567,7 +569,7 @@
                 // Determine the correct endpoint based on type
                 let url;
                 if (approval.request_type === 'event') {
-                    url = `http://localhost:8000/api/auth/event-applications/${selectedApprovalId}/admin-reject/`;
+                    url = getApiUrl(`/api/auth/event-applications/${selectedApprovalId}/admin-reject/`);
                 } else {
                     // Club application endpoint (when implemented)
                     alert('Club application rejection not yet implemented');
@@ -605,7 +607,7 @@
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8000/api/auth/approvals/${selectedApprovalId}/review/`, {
+                const response = await fetch(getApiUrl(`/api/auth/approvals/${selectedApprovalId}/review/`), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`

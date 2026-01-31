@@ -36,6 +36,8 @@
         .club-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .club-card.selected { border-color: #2d4a63; background-color: #f1f0ec; }
     </style>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
 </head>
 <body class="antialiased">
 
@@ -358,7 +360,7 @@
         async function loadAvailableClubs() {
             try {
                 // Fetch clubs from public endpoint (no auth required)
-                const response = await fetch('http://localhost:8000/api/auth/clubs/', {
+                const response = await fetch(getApiUrl('/api/auth/clubs/'), {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -417,7 +419,7 @@
 
             try {
                 // Call login API
-                const response = await fetch('http://localhost:8000/api/auth/login/', {
+                const response = await fetch(getApiUrl('/api/auth/login/'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -511,7 +513,7 @@
         async function showClubSelectionModal(token) {
             try {
                 // Fetch user's clubs
-                const response = await fetch('http://localhost:8000/api/auth/my-clubs/', {
+                const response = await fetch(getApiUrl('/api/auth/my-clubs/'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'

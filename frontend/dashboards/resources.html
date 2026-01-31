@@ -46,6 +46,8 @@
         .time-slot.booked { background: #fee2e2; border-color: #fca5a5; cursor: not-allowed; }
         .time-slot.selected { background: #dcfce7; border-color: #86efac; }
     </style>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
 </head>
 <body class="antialiased bg-[#faf9f6]" onload="protectPage('admin')">
 
@@ -401,7 +403,7 @@
         async function loadResources() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:8000/api/auth/resources/', {
+                const response = await fetch(getApiUrl('/api/auth/resources/'), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -440,7 +442,7 @@
         async function loadBookings() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:8000/api/auth/bookings/', {
+                const response = await fetch(getApiUrl('/api/auth/bookings/'), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -497,7 +499,7 @@
         async function loadLogs() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:8000/api/auth/resource-logs/', {
+                const response = await fetch(getApiUrl('/api/auth/resource-logs/'), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -555,7 +557,7 @@
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:8000/api/auth/resources/', {
+                const response = await fetch(getApiUrl('/api/auth/resources/'), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

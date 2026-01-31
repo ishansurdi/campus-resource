@@ -48,6 +48,8 @@
         .timeline-item { border-left: 2px solid #e5e3da; padding-left: 1.5rem; position: relative; }
         .timeline-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #c5a059; }
     </style>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
 </head>
 <body class="antialiased bg-[#faf9f6]" onload="protectPage('admin')">
 
@@ -409,7 +411,7 @@
         async function loadEvents() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:8000/api/auth/events/', {
+                const response = await fetch(getApiUrl('/api/auth/events/'), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -577,7 +579,7 @@
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8000/api/auth/events/${currentEventId}/approve/`, {
+                const response = await fetch(getApiUrl(`/api/auth/events/${currentEventId}/approve/`), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -603,7 +605,7 @@
 
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8000/api/auth/events/${currentEventId}/reject/`, {
+                const response = await fetch(getApiUrl(`/api/auth/events/${currentEventId}/reject/`), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -630,7 +632,7 @@
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8000/api/auth/events/${currentEventId}/report/`, {
+                const response = await fetch(getApiUrl(`/api/auth/events/${currentEventId}/report/`), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

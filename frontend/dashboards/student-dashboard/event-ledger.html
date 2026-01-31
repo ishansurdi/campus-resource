@@ -6,6 +6,8 @@
     <title>Event Ledger | CAMPUSPHERE</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="../../auth.js"></script>
+    <script src="/config.js"></script>
+    <script src="/api-helper.js"></script>
 </head>
 <body class="bg-[#f1f0ec] font-sans antialiased">
     <!-- Header -->
@@ -260,7 +262,7 @@
         async function loadEventDetails() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch(`http://localhost:8000/api/auth/events/${eventId}/`, {
+                const response = await fetch(getApiUrl(`/api/auth/events/${eventId}/`), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -362,7 +364,7 @@
         async function loadExpenses() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch(`http://localhost:8000/api/auth/events/${eventId}/expenses/`, {
+                const response = await fetch(getApiUrl(`/api/auth/events/${eventId}/expenses/`), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -526,7 +528,7 @@
 
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch(`http://localhost:8000/api/auth/events/${eventId}/expenses/`, {
+                const response = await fetch(getApiUrl(`/api/auth/events/${eventId}/expenses/`), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
