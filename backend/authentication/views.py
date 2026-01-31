@@ -1,11 +1,12 @@
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
 import uuid
 import boto3
 from .models import AdminUser, UniversityProfile
@@ -41,19 +42,46 @@ def login_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    username = serializer.validated_data['username']
+    username_or_email = serializer.validated_data['username']
     password = serializer.validated_data['password']
     role = serializer.validated_data.get('role')
     two_factor_code = serializer.validated_data.get('two_factor_code')
     
+    # Try to find user by username or email
+    user = None
+    username_to_auth = None
+    
+    # First, check if input looks like an email
+    if '@' in username_or_email:
+        # Try to find user by email
+        try:
+            user_obj = AdminUser.objects.get(email=username_or_email)
+            username_to_auth = user_obj.username
+        except AdminUser.DoesNotExist:
+            return Response(
+                {'error': 'No account found with this email'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+    else:
+        # Treat as username
+        username_to_auth = username_or_email
+    
     # Authenticate user
-    user = authenticate(username=username, password=password)
+    user = authenticate(username=username_to_auth, password=password)
     
     if user is None:
-        return Response(
-            {'error': 'Invalid credentials'},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+        # Check if user exists but password is wrong
+        try:
+            AdminUser.objects.get(username=username_to_auth)
+            return Response(
+                {'error': 'Invalid password'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        except AdminUser.DoesNotExist:
+            return Response(
+                {'error': 'No account found with this username'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
     
     if not user.is_active:
         return Response(
@@ -293,10 +321,38 @@ def university_upload_view(request):
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
+@authentication_classes([])  # Allow public access for GET, require auth for POST via method check
+@permission_classes([AllowAny])
 def clubs_view(request):
-    """List all clubs or create a new club (admin only)."""
+    """List all clubs (PUBLIC) or create a new club (admin only)."""
     if request.method == 'GET':
+        # Public endpoint - no authentication required
+        try:
+            clubs = Club.objects.all().order_by('name')
+            clubs_data = []
+            for club in clubs:
+                # Get faculty mentor email if available
+                faculty_email = club.faculty_mentor.email if club.faculty_mentor else ''
+                
+                clubs_data.append({
+                    'id': club.id,
+                    'name': club.name,
+                    'club_number': club.club_number,
+                    'faculty_mentor_name': club.faculty_mentor_name or '',
+                    'faculty_mentor_email': faculty_email,
+                })
+            return Response(clubs_data, status=status.HTTP_200_OK)
+        except Exception as exc:
+            return Response(
+                {'error': 'Failed to fetch clubs', 'details': str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    # POST method - require authentication
+    if not request.user.is_authenticated:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    if request.method == 'POST':
         clubs = Club.objects.all().order_by('-created_at')
         # Prepare S3 client for presigned URLs
         bucket = settings.AWS_STORAGE_BUCKET_NAME
@@ -893,3 +949,315 @@ def approval_history_view(request, approval_id):
     
     except Exception as exc:
         return Response({'error': 'Failed to fetch approval history', 'details': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_clubs_view(request):
+    """Get all clubs the current user is a member of."""
+    try:
+        # Get all club memberships for the current user
+        memberships = ClubMember.objects.filter(
+            user=request.user
+        ).select_related('club').order_by('-created_at')
+        
+        # Serialize the data
+        clubs_data = []
+        for membership in memberships:
+            clubs_data.append({
+                'id': membership.id,
+                'club_id': membership.club.id,
+                'club_name': membership.club.name,
+                'club_number': membership.club.club_number,
+                'role': membership.get_role_display(),
+                'status': membership.status,
+                'approved': membership.status == 'approved',
+                'approved_at': membership.approved_at,
+                'joined_at': membership.created_at,
+                'department': membership.department,
+                'academic_year': membership.academic_year,
+                'faculty_mentor_name': membership.club.faculty_mentor_name,
+            })
+        
+        return Response(clubs_data, status=status.HTTP_200_OK)
+    
+    except Exception as exc:
+        return Response({'error': 'Failed to fetch club memberships', 'details': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def club_members_view(request, club_id):
+    """Get all members of a specific club."""
+    try:
+        # Verify the user is a member of this club
+        user_membership = ClubMember.objects.filter(
+            user=request.user,
+            club_id=club_id
+        ).first()
+        
+        if not user_membership:
+            return Response(
+                {'error': 'You are not a member of this club'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get all members of the club
+        members = ClubMember.objects.filter(
+            club_id=club_id
+        ).select_related('user').order_by('role', '-created_at')
+        
+        # Serialize the data
+        members_data = []
+        for member in members:
+            members_data.append({
+                'id': member.id,
+                'user_id': member.user.id,
+                'first_name': member.user.first_name,
+                'last_name': member.user.last_name,
+                'email': member.user.email,
+                'student_id': member.user.student_id,
+                'role': member.get_role_display(),
+                'status': member.status,
+                'department': member.department,
+                'academic_year': member.academic_year,
+                'created_at': member.created_at,
+                'approved_at': member.approved_at,
+            })
+        
+        return Response(members_data, status=status.HTTP_200_OK)
+    
+    except Exception as exc:
+        return Response(
+            {'error': 'Failed to fetch club members', 'details': str(exc)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@authentication_classes([])  # Disable authentication for this endpoint
+@permission_classes([AllowAny])
+def all_clubs_view(request):
+    """Get all active clubs - PUBLIC endpoint for login page."""
+    try:
+        import traceback
+        print("all_clubs_view called")
+        
+        clubs = Club.objects.all().order_by('name')
+        print(f"Found {clubs.count()} clubs")
+        
+        clubs_data = []
+        for club in clubs:
+            try:
+                member_count = ClubMember.objects.filter(club=club, status='active').count()
+                clubs_data.append({
+                    'id': club.id,
+                    'name': club.name,
+                    'club_number': club.club_number,
+                    'description': '',  # Club model doesn't have description field
+                    'domain': 'general',  # Club model doesn't have domain field yet
+                    'faculty_mentor_name': club.faculty_mentor_name or '',
+                    'faculty_mentor_email': club.faculty_mentor_email or '',
+                    'department': club.department or '',
+                    'member_count': member_count,
+                    'created_at': club.created_at,
+                })
+            except Exception as club_error:
+                print(f"Error processing club {club.id}: {str(club_error)}")
+                traceback.print_exc()
+        
+        print(f"Returning {len(clubs_data)} clubs")
+        return Response(clubs_data, status=status.HTTP_200_OK)
+    
+    except Exception as exc:
+        print(f"Error in all_clubs_view: {str(exc)}")
+        import traceback
+        traceback.print_exc()
+        return Response(
+            {'error': 'Failed to fetch clubs', 'details': str(exc)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def club_detail_view(request, club_id):
+    """Get detailed information about a specific club."""
+    try:
+        club = Club.objects.get(id=club_id)
+        member_count = ClubMember.objects.filter(club=club, status='approved').count()
+        
+        club_data = {
+            'id': club.id,
+            'name': club.name,
+            'club_number': club.club_number,
+            'description': '',  # Club model doesn't have description field
+            'domain': 'general',  # Club model doesn't have domain field yet
+            'faculty_mentor_name': club.faculty_mentor_name or '',
+            'member_count': member_count,
+            'created_at': club.created_at,
+        }
+        
+        return Response(club_data, status=status.HTTP_200_OK)
+    
+    except Club.DoesNotExist:
+        return Response(
+            {'error': 'Club not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as exc:
+        return Response(
+            {'error': 'Failed to fetch club details', 'details': str(exc)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def club_applications_view(request):
+    """Get user's club applications or create a new one."""
+    if request.method == 'GET':
+        try:
+            from .models import ClubApplication
+            applications = ClubApplication.objects.filter(
+                user=request.user
+            ).select_related('club').order_by('-applied_at')
+            
+            applications_data = []
+            for app in applications:
+                applications_data.append({
+                    'id': app.id,
+                    'club_id': app.club.id,
+                    'club_name': app.club.name,
+                    'role': app.role,
+                    'motivation': app.motivation,
+                    'status': app.status,
+                    'applied_at': app.applied_at,
+                    'reviewed_at': app.reviewed_at,
+                    'remarks': app.remarks,
+                })
+            
+            return Response(applications_data, status=status.HTTP_200_OK)
+        
+        except Exception as exc:
+            return Response(
+                {'error': 'Failed to fetch applications', 'details': str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    elif request.method == 'POST':
+        try:
+            from .models import ClubApplication
+            club_id = request.data.get('club_id')
+            role = request.data.get('role', 'member')
+            motivation = request.data.get('motivation', '')
+            
+            if not club_id or not motivation:
+                return Response(
+                    {'error': 'Club ID and motivation are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if len(motivation) < 50:
+                return Response(
+                    {'error': 'Motivation must be at least 50 characters'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if club exists
+            try:
+                club = Club.objects.get(id=club_id)
+            except Club.DoesNotExist:
+                return Response(
+                    {'error': 'Club not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Check if already a member
+            existing_member = ClubMember.objects.filter(
+                user=request.user,
+                club=club
+            ).first()
+            
+            if existing_member:
+                return Response(
+                    {'error': 'You are already a member of this club'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if already applied
+            existing_application = ClubApplication.objects.filter(
+                user=request.user,
+                club=club,
+                status='pending'
+            ).first()
+            
+            if existing_application:
+                return Response(
+                    {'error': 'You already have a pending application for this club'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Create application
+            application = ClubApplication.objects.create(
+                user=request.user,
+                club=club,
+                role=role,
+                motivation=motivation,
+                status='pending'
+            )
+            
+            return Response({
+                'message': 'Application submitted successfully',
+                'application_id': application.id
+            }, status=status.HTTP_201_CREATED)
+        
+        except Exception as exc:
+            return Response(
+                {'error': 'Failed to submit application', 'details': str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def application_detail_view(request, application_id):
+    """Get details of a specific club application."""
+    try:
+        from .models import ClubApplication
+        application = ClubApplication.objects.select_related('club', 'user', 'reviewed_by').get(
+            id=application_id,
+            user=request.user
+        )
+        
+        app_data = {
+            'id': application.id,
+            'club_id': application.club.id,
+            'club_name': application.club.name,
+            'role': application.role,
+            'motivation': application.motivation,
+            'status': application.status,
+            'applied_at': application.applied_at,
+            'reviewed_at': application.reviewed_at,
+            'reviewed_by': application.reviewed_by.get_full_name() if application.reviewed_by else None,
+            'remarks': application.remarks,
+        }
+        
+        return Response(app_data, status=status.HTTP_200_OK)
+    
+    except ClubApplication.DoesNotExist:
+        return Response(
+            {'error': 'Application not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as exc:
+        return Response(
+            {'error': 'Failed to fetch application details', 'details': str(exc)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    except Exception as exc:
+        return Response(
+            {'error': 'Failed to fetch club members', 'details': str(exc)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Approvals | CAMPUSPHERE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="../auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = getCurrentUser();
+            if (!user) {
+                window.location.href = '../login.html';
+                return;
+            }
+            
+            // Load user profile to determine role
+            loadUserProfile();
+        });
+
+        let userRole = '';
+        let pendingEvents = [];
+
+        async function loadUserProfile() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/profile/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const profile = await response.json();
+                    userRole = profile.user_role;
+                    
+                    // Check if user has permission
+                    if (userRole !== 'faculty' && userRole !== 'admin') {
+                        showMessage('Access denied. Faculty or Admin role required.', 'error');
+                        setTimeout(() => window.location.href = '../login.html', 2000);
+                        return;
+                    }
+                    
+                    // Load appropriate pending approvals
+                    if (userRole === 'faculty') {
+                        loadPendingFacultyApprovals();
+                    } else if (userRole === 'admin') {
+                        loadPendingAdminApprovals();
+                    }
+                    
+                    // Update UI based on role
+                    document.getElementById('pageTitle').textContent = userRole === 'faculty' ? 'Faculty Event Approvals' : 'Admin Event Approvals';
+                    document.getElementById('pageSubtitle').textContent = userRole === 'faculty' ? 'Review and approve event applications' : 'Final approval for events';
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        async function loadPendingFacultyApprovals() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/event-applications/pending-faculty/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    pendingEvents = data.pending_events || [];
+                    displayPendingEvents();
+                } else {
+                    showMessage('Failed to load pending approvals', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading faculty approvals:', error);
+                showMessage('Error loading approvals', 'error');
+            }
+        }
+
+        async function loadPendingAdminApprovals() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/event-applications/pending-admin/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    pendingEvents = data.pending_events || [];
+                    displayPendingEvents();
+                } else {
+                    showMessage('Failed to load pending approvals', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading admin approvals:', error);
+                showMessage('Error loading approvals', 'error');
+            }
+        }
+
+        function displayPendingEvents() {
+            const container = document.getElementById('eventsContainer');
+            
+            if (pendingEvents.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white border border-[#e5e3da] rounded-sm">
+                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-slate-500 font-bold">No pending approvals</p>
+                        <p class="text-xs text-slate-400 mt-2">All caught up!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = pendingEvents.map(event => createEventCard(event)).join('');
+        }
+
+        function createEventCard(event) {
+            return `
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6 mb-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-[#1a1c1e] mb-2">${event.title}</h3>
+                            <div class="flex items-center gap-4 text-xs text-slate-500 mb-3">
+                                <span class="px-3 py-1 bg-[#f1f0ec] text-[#1a1c1e] font-bold uppercase tracking-widest rounded-sm">${event.event_type}</span>
+                                <span>🏛️ ${event.club.name}</span>
+                                <span>👤 ${event.created_by.name}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <button onclick="viewEventDetails(${event.id})" class="px-4 py-2 bg-[#2d4a63] text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#1a1c1e]">
+                                View Full Details
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="prose prose-sm max-w-none mb-4">
+                        <p class="text-sm text-slate-600">${event.description}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <div class="text-xs text-slate-400 mb-1">Date</div>
+                            <div class="text-sm font-bold text-slate-600">${formatDate(new Date(event.start_date))}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-400 mb-1">Venue</div>
+                            <div class="text-sm font-bold text-slate-600">${event.venue}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-400 mb-1">Budget</div>
+                            <div class="text-sm font-bold text-slate-600">₹${event.estimated_budget}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-400 mb-1">Participants</div>
+                            <div class="text-sm font-bold text-slate-600">${event.max_participants || 'Unlimited'}</div>
+                        </div>
+                    </div>
+                    
+                    ${userRole === 'admin' && event.faculty_approved_by ? `
+                        <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
+                            <div class="text-xs font-bold uppercase tracking-widest text-green-700 mb-1">Faculty Approved</div>
+                            <div class="text-sm text-green-600">By ${event.faculty_approved_by.name} on ${formatDate(new Date(event.faculty_approved_at))}</div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="flex gap-3 pt-4 border-t border-[#e5e3da]">
+                        <button onclick="approveEvent(${event.id})" class="flex-1 px-6 py-3 bg-green-500 text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-green-600 transition-colors">
+                            ✓ Approve
+                        </button>
+                        <button onclick="showRejectModal(${event.id}, '${event.title}')" class="flex-1 px-6 py-3 bg-red-500 text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-red-600 transition-colors">
+                            ✗ Reject
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function viewEventDetails(eventId) {
+            const event = pendingEvents.find(e => e.id === eventId);
+            if (!event) return;
+            
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('detailsContent');
+            
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-[#1a1c1e] mb-2">${event.title}</h2>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold uppercase tracking-widest px-3 py-1 bg-[#f1f0ec] text-[#1a1c1e] rounded-sm">${event.event_type}</span>
+                            ${event.is_joint_event ? '<span class="text-xs font-bold text-[#c5a059]">🤝 JOINT EVENT</span>' : ''}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-2">Description</h3>
+                        <p class="text-sm text-slate-600">${event.description}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Club</h3>
+                            <div class="text-sm font-bold text-[#1a1c1e]">${event.club.name}</div>
+                            ${event.collaborating_clubs && event.collaborating_clubs.length > 0 ? `
+                                <div class="text-xs text-slate-500 mt-1">Collaborating with: ${event.collaborating_clubs.map(c => c.name).join(', ')}</div>
+                            ` : ''}
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Organizer</h3>
+                            <div class="text-sm text-[#1a1c1e]">${event.created_by.name}</div>
+                            <div class="text-xs text-slate-500">${event.created_by.email}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-l-4 border-[#2d4a63] pl-4">
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-3">Event Details</h3>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Date & Time</div>
+                                <div class="text-slate-600">${formatDate(new Date(event.start_date))} to ${formatDate(new Date(event.end_date))}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Venue</div>
+                                <div class="text-slate-600">${event.venue}</div>
+                            </div>
+                            ${event.max_participants ? `
+                                <div>
+                                    <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Capacity</div>
+                                    <div class="text-slate-600">${event.max_participants} participants</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="border-l-4 border-[#3d706e] pl-4">
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-3">Budget & Finance</h3>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Estimated Budget</div>
+                                <div class="text-lg font-bold text-[#1a1c1e]">₹${event.estimated_budget}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Funding Source</div>
+                                <div class="text-slate-600">${event.funding_source}</div>
+                            </div>
+                            ${event.budget_breakdown && Object.keys(event.budget_breakdown).length > 0 ? `
+                                <div>
+                                    <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Budget Breakdown</div>
+                                    <div class="bg-[#f1f0ec] rounded-sm p-3 font-mono text-xs">
+                                        ${Object.entries(event.budget_breakdown).map(([key, value]) => 
+                                            `<div class="flex justify-between mb-1"><span>${key}</span><span class="font-bold">₹${value}</span></div>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    ${event.objectives ? `
+                        <div class="border-l-4 border-[#c5a059] pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-2">Objectives</h3>
+                            <p class="text-sm text-slate-600">${event.objectives}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${event.target_audience ? `
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Target Audience</h3>
+                            <p class="text-sm text-slate-600">${event.target_audience}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${event.expected_outcomes ? `
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Expected Outcomes</h3>
+                            <p class="text-sm text-slate-600">${event.expected_outcomes}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${event.safety_measures ? `
+                        <div class="border-l-4 border-red-500 pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-2">Safety Measures</h3>
+                            <p class="text-sm text-slate-600">${event.safety_measures}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${event.resource_requirements ? `
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Resource Requirements</h3>
+                            <p class="text-sm text-slate-600">${event.resource_requirements}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${event.faculty_mentor_name ? `
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-blue-900 mb-2">Faculty Mentor</h3>
+                            <div class="text-sm text-blue-700">
+                                <div class="font-bold">${event.faculty_mentor_name}</div>
+                                ${event.faculty_mentor_email ? `<div>${event.faculty_mentor_email}</div>` : ''}
+                                ${event.faculty_mentor_department ? `<div>${event.faculty_mentor_department}</div>` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="flex gap-3 pt-4 border-t border-[#e5e3da]">
+                        <button onclick="closeModal('detailsModal')" class="flex-1 px-6 py-3 bg-[#f1f0ec] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#e5e3da]">
+                            Close
+                        </button>
+                        <button onclick="closeModal('detailsModal'); approveEvent(${event.id})" class="flex-1 px-6 py-3 bg-green-500 text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-green-600">
+                            ✓ Approve
+                        </button>
+                        <button onclick="closeModal('detailsModal'); showRejectModal(${event.id}, '${event.title}')" class="flex-1 px-6 py-3 bg-red-500 text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-red-600">
+                            ✗ Reject
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+
+        async function approveEvent(eventId) {
+            if (!confirm('Are you sure you want to approve this event?')) return;
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const endpoint = userRole === 'faculty' 
+                    ? `http://localhost:8000/api/auth/event-applications/${eventId}/faculty-approve/`
+                    : `http://localhost:8000/api/auth/event-applications/${eventId}/admin-approve/`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message || 'Event approved successfully', 'success');
+                    // Reload approvals
+                    if (userRole === 'faculty') {
+                        loadPendingFacultyApprovals();
+                    } else {
+                        loadPendingAdminApprovals();
+                    }
+                } else {
+                    showMessage(data.error || 'Failed to approve event', 'error');
+                }
+            } catch (error) {
+                console.error('Error approving event:', error);
+                showMessage('Error approving event', 'error');
+            }
+        }
+
+        function showRejectModal(eventId, eventTitle) {
+            const modal = document.getElementById('rejectModal');
+            document.getElementById('rejectEventId').value = eventId;
+            document.getElementById('rejectEventTitle').textContent = eventTitle;
+            modal.classList.remove('hidden');
+        }
+
+        async function rejectEvent() {
+            const eventId = document.getElementById('rejectEventId').value;
+            const reason = document.getElementById('rejectionReason').value;
+            
+            if (!reason.trim()) {
+                showMessage('Please provide a rejection reason', 'error');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const endpoint = userRole === 'faculty' 
+                    ? `http://localhost:8000/api/auth/event-applications/${eventId}/faculty-reject/`
+                    : `http://localhost:8000/api/auth/event-applications/${eventId}/admin-reject/`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ rejection_reason: reason })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message || 'Event rejected', 'success');
+                    closeModal('rejectModal');
+                    document.getElementById('rejectionReason').value = '';
+                    // Reload approvals
+                    if (userRole === 'faculty') {
+                        loadPendingFacultyApprovals();
+                    } else {
+                        loadPendingAdminApprovals();
+                    }
+                } else {
+                    showMessage(data.error || 'Failed to reject event', 'error');
+                }
+            } catch (error) {
+                console.error('Error rejecting event:', error);
+                showMessage('Error rejecting event', 'error');
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const bgColor = type === 'success' ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-red-700';
+            container.innerHTML = `
+                <div class="${bgColor} border-l-4 p-4 mb-4 rounded-sm">
+                    <p class="text-sm font-bold">${message}</p>
+                </div>
+            `;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        function handleLogout() {
+            logout();
+        }
+    </script>
+</head>
+<body class="bg-[#f1f0ec] font-sans antialiased">
+    <div class="min-h-screen p-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <header class="mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 id="pageTitle" class="text-4xl font-bold text-[#1a1c1e] mb-2">Event Approvals</h1>
+                        <p id="pageSubtitle" class="text-sm text-slate-500 uppercase tracking-widest">Review event applications</p>
+                    </div>
+                    <button onclick="handleLogout()" class="px-6 py-3 bg-red-500 text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-red-600">
+                        Logout
+                    </button>
+                </div>
+                
+                <!-- Message Container -->
+                <div id="messageContainer"></div>
+            </header>
+
+            <!-- Events Container -->
+            <div id="eventsContainer">
+                <div class="text-center py-12 bg-white border border-[#e5e3da] rounded-sm">
+                    <p class="text-slate-400">Loading approvals...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Details Modal -->
+    <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-sm max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-8">
+                <div id="detailsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div id="rejectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-sm max-w-lg w-full p-8">
+            <h2 class="text-xl font-bold text-[#1a1c1e] mb-4">Reject Event Application</h2>
+            <p class="text-sm text-slate-600 mb-4">Event: <span id="rejectEventTitle" class="font-bold"></span></p>
+            <input type="hidden" id="rejectEventId">
+            <div class="mb-6">
+                <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Rejection Reason *</label>
+                <textarea id="rejectionReason" rows="4" required 
+                    placeholder="Please provide a detailed reason for rejection..."
+                    class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeModal('rejectModal')" class="flex-1 px-4 py-2 bg-[#f1f0ec] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#e5e3da]">
+                    Cancel
+                </button>
+                <button onclick="rejectEvent()" class="flex-1 px-4 py-2 bg-red-500 text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-red-600">
+                    Confirm Rejection
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

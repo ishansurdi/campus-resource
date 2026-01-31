@@ -164,6 +164,38 @@ class ClubMember(models.Model):
         return f"{self.user.username} - {self.role} @ {self.club.name}"
 
 
+class ClubApplication(models.Model):
+    """Applications from students to join clubs."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    club = models.ForeignKey('Club', on_delete=models.CASCADE, related_name='applications')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='club_applications')
+    role = models.CharField(max_length=50, default='member')
+    motivation = models.TextField(help_text='Why the student wants to join')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    applied_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='reviewed_applications'
+    )
+    remarks = models.TextField(blank=True, help_text='Admin remarks on application')
+
+    class Meta:
+        unique_together = ('club', 'user')
+        ordering = ['-applied_at']
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.club.name} ({self.status})"
+
+
 class RoleHistory(models.Model):
     """Audit trail for role changes."""
     ACTION_CHOICES = [
@@ -347,9 +379,11 @@ class Event(models.Model):
     """
     STATUS_CHOICES = [
         ('draft', 'Draft'),
-        ('pending_approval', 'Pending Approval'),
+        ('pending_faculty_approval', 'Pending Faculty Approval'),
+        ('faculty_rejected', 'Faculty Rejected'),
+        ('pending_admin_approval', 'Pending Admin Approval'),
+        ('admin_rejected', 'Admin Rejected'),
         ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
         ('in_progress', 'In Progress'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
@@ -414,7 +448,7 @@ class Event(models.Model):
     sponsorship_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
     # Status & Approval
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='draft')
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='public')
     requires_approval = models.BooleanField(default=True)
     approval_request = models.OneToOneField(
@@ -432,6 +466,32 @@ class Event(models.Model):
         null=True,
         related_name='created_events'
     )
+    
+    # Approval workflow
+    faculty_mentor_name = models.CharField(max_length=255, blank=True)
+    faculty_mentor_email = models.EmailField(blank=True)
+    faculty_mentor_department = models.CharField(max_length=100, blank=True)
+    faculty_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='faculty_approved_events'
+    )
+    faculty_approved_at = models.DateTimeField(null=True, blank=True)
+    faculty_rejection_reason = models.TextField(blank=True)
+    
+    admin_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='admin_approved_events'
+    )
+    admin_approved_at = models.DateTimeField(null=True, blank=True)
+    admin_rejection_reason = models.TextField(blank=True)
+    
+    # Legacy field for backward compatibility
     approved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -469,6 +529,18 @@ class Event(models.Model):
     report_generated = models.BooleanField(default=False)
     report_url = models.URLField(blank=True)
     success_rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
+    
+    # Application Details (in-depth information)
+    objectives = models.TextField(blank=True)
+    target_audience = models.TextField(blank=True)
+    expected_outcomes = models.TextField(blank=True)
+    safety_measures = models.TextField(blank=True)
+    budget_breakdown = models.JSONField(default=dict, blank=True)  # Detailed budget items
+    funding_source = models.CharField(max_length=255, blank=True)
+    resource_requirements = models.TextField(blank=True)
+    volunteer_requirements = models.TextField(blank=True)
+    special_permissions = models.TextField(blank=True)
+    risk_assessment = models.TextField(blank=True)
     
     # Admin Controls
     featured = models.BooleanField(default=False)
@@ -691,6 +763,349 @@ class EventReport(models.Model):
 
     def __str__(self):
         return f"{self.get_report_type_display()} - {self.event.title}"
+
+
+class EventRegistration(models.Model):
+    """
+    Tracks student registrations for events with status and payment.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('waitlisted', 'Waitlisted'),
+        ('cancelled', 'Cancelled'),
+        ('attended', 'Attended'),
+        ('no_show', 'No Show'),
+    ]
+
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('refunded', 'Refunded'),
+        ('waived', 'Waived'),
+    ]
+
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, related_name='registrations')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='event_registrations')
+    
+    # Registration details
+    registration_number = models.CharField(max_length=50, unique=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Payment
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    payment_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payment_reference = models.CharField(max_length=100, blank=True)
+    payment_date = models.DateTimeField(null=True, blank=True)
+    
+    # Additional info
+    questions_answers = models.JSONField(default=dict, blank=True)  # Custom registration questions
+    special_requirements = models.TextField(blank=True)
+    team_name = models.CharField(max_length=100, blank=True)  # For team events
+    team_members = models.JSONField(default=list, blank=True)  # List of team member IDs
+    
+    # Timestamps
+    registered_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    
+    # Admin actions
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cancelled_registrations'
+    )
+    cancellation_reason = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-registered_at']
+        unique_together = ('event', 'user')
+        indexes = [
+            models.Index(fields=['event', 'status']),
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['-registered_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.event.title} ({self.registration_number})"
+
+
+class EventAttendance(models.Model):
+    """
+    Tracks actual attendance for events with check-in/check-out times.
+    """
+    STATUS_CHOICES = [
+        ('absent', 'Absent'),
+        ('present', 'Present'),
+        ('partial', 'Partial Attendance'),
+        ('excused', 'Excused'),
+    ]
+
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, related_name='attendances')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='event_attendances')
+    registration = models.OneToOneField(
+        'EventRegistration',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='attendance'
+    )
+    
+    # Attendance tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='absent')
+    check_in_time = models.DateTimeField(null=True, blank=True)
+    check_out_time = models.DateTimeField(null=True, blank=True)
+    duration_minutes = models.IntegerField(null=True, blank=True)
+    
+    # Verification
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='verified_attendances'
+    )
+    verification_method = models.CharField(max_length=50, blank=True)  # QR, Manual, Biometric, etc.
+    verification_data = models.JSONField(default=dict, blank=True)
+    
+    # Session tracking (for multi-day/session events)
+    session_number = models.IntegerField(default=1)
+    session_name = models.CharField(max_length=100, blank=True)
+    
+    # Feedback
+    feedback_rating = models.IntegerField(null=True, blank=True)  # 1-5 stars
+    feedback_text = models.TextField(blank=True)
+    feedback_submitted_at = models.DateTimeField(null=True, blank=True)
+    
+    # Certificate eligibility
+    certificate_eligible = models.BooleanField(default=False)
+    certificate_issued = models.BooleanField(default=False)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-check_in_time']
+        unique_together = ('event', 'user', 'session_number')
+        indexes = [
+            models.Index(fields=['event', 'status']),
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['certificate_eligible', 'certificate_issued']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.event.title} ({self.get_status_display()})"
+
+
+class EventExpense(models.Model):
+    """
+    Comprehensive expense tracking for events with OCR and approval workflow.
+    """
+    CATEGORY_CHOICES = [
+        ('venue', 'Venue Rental'),
+        ('equipment', 'Equipment'),
+        ('catering', 'Catering'),
+        ('decoration', 'Decoration'),
+        ('printing', 'Printing & Stationery'),
+        ('prizes', 'Prizes & Awards'),
+        ('travel', 'Travel & Transportation'),
+        ('marketing', 'Marketing & Promotion'),
+        ('speakers', 'Guest Speakers / Performers'),
+        ('miscellaneous', 'Miscellaneous'),
+    ]
+
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('paid', 'Paid'),
+        ('reimbursed', 'Reimbursed'),
+    ]
+
+    PAYMENT_MODE_CHOICES = [
+        ('cash', 'Cash'),
+        ('cheque', 'Cheque'),
+        ('online', 'Online Transfer'),
+        ('card', 'Card Payment'),
+        ('upi', 'UPI'),
+    ]
+
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, related_name='expenses')
+    
+    # Basic details
+    expense_id = models.CharField(max_length=50, unique=True)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    
+    # Amount details
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=10, default='INR')
+    gst_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Payment details
+    payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES, blank=True)
+    payment_reference = models.CharField(max_length=100, blank=True)
+    payment_date = models.DateField(null=True, blank=True)
+    paid_to = models.CharField(max_length=255)
+    paid_to_contact = models.CharField(max_length=100, blank=True)
+    
+    # Bill/Invoice details
+    invoice_number = models.CharField(max_length=100, blank=True)
+    invoice_date = models.DateField(null=True, blank=True)
+    bill_image_url = models.URLField(blank=True)
+    bill_pdf_url = models.URLField(blank=True)
+    
+    # OCR extracted data
+    ocr_processed = models.BooleanField(default=False)
+    ocr_data = models.JSONField(default=dict, blank=True)  # Extracted invoice details
+    ocr_confidence = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    ocr_processed_at = models.DateTimeField(null=True, blank=True)
+    ocr_verified = models.BooleanField(default=False)
+    
+    # Status & Approval
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='submitted_expenses'
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_expenses'
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True)
+    
+    # Additional documents
+    supporting_documents = models.JSONField(default=list, blank=True)  # List of URLs
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['event', 'status']),
+            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['submitted_by']),
+        ]
+
+    def __str__(self):
+        return f"{self.expense_id} - {self.title} (₹{self.total_amount})"
+
+
+class EventCertificate(models.Model):
+    """
+    Manages certificates issued for event participation/winners.
+    """
+    CERTIFICATE_TYPE_CHOICES = [
+        ('participation', 'Certificate of Participation'),
+        ('appreciation', 'Certificate of Appreciation'),
+        ('winner', 'Winner Certificate'),
+        ('runner_up', 'Runner Up Certificate'),
+        ('completion', 'Course Completion'),
+        ('achievement', 'Achievement Certificate'),
+    ]
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('generated', 'Generated'),
+        ('issued', 'Issued'),
+        ('downloaded', 'Downloaded'),
+        ('revoked', 'Revoked'),
+    ]
+
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, related_name='certificates')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='event_certificates')
+    attendance = models.OneToOneField(
+        'EventAttendance',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='certificate'
+    )
+    
+    # Certificate details
+    certificate_id = models.CharField(max_length=50, unique=True)
+    certificate_type = models.CharField(max_length=50, choices=CERTIFICATE_TYPE_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Recipient details
+    recipient_name = models.CharField(max_length=255)
+    recipient_email = models.EmailField()
+    
+    # Certificate content
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    achievement_details = models.TextField(blank=True)  # e.g., "1st Position in..."
+    rank_position = models.IntegerField(null=True, blank=True)
+    
+    # Template & Design
+    template_name = models.CharField(max_length=100, default='default')
+    custom_fields = models.JSONField(default=dict, blank=True)  # Additional dynamic fields
+    
+    # Files
+    certificate_url = models.URLField(blank=True)  # Generated PDF
+    verification_url = models.URLField(blank=True)  # Public verification link
+    qr_code_url = models.URLField(blank=True)
+    
+    # Verification
+    verification_code = models.CharField(max_length=100, unique=True, blank=True)
+    is_verified = models.BooleanField(default=False)
+    
+    # Timestamps
+    generated_at = models.DateTimeField(null=True, blank=True)
+    issued_at = models.DateTimeField(null=True, blank=True)
+    downloaded_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Admin
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='issued_certificates'
+    )
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='revoked_certificates'
+    )
+    revocation_reason = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-issued_at']
+        unique_together = ('event', 'user', 'certificate_type')
+        indexes = [
+            models.Index(fields=['event', 'status']),
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['verification_code']),
+            models.Index(fields=['-issued_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.certificate_id} - {self.recipient_name} ({self.event.title})"
 
 
 class UniversityProfile(models.Model):
@@ -1045,3 +1460,227 @@ class ResourceLog(models.Model):
             self.log_id = f"LOG-{uuid.uuid4().hex[:12].upper()}"
         
         super().save(*args, **kwargs)
+
+
+class ClubApplication(models.Model):
+    """
+    Universal application model for all club-related requests:
+    - Member additions
+    - Position changes (Treasurer, VP, Secretary, etc.)
+    - Club information updates
+    - Budget requests
+    - Any other club management requests
+    All applications follow faculty → admin approval workflow.
+    """
+    APPLICATION_TYPE_CHOICES = [
+        ('member_addition', 'Member Addition'),
+        ('member_removal', 'Member Removal'),
+        ('position_change', 'Position Change'),
+        ('budget_request', 'Budget Request'),
+        ('club_info_update', 'Club Information Update'),
+        ('event_permission', 'Event Permission'),
+        ('resource_request', 'Resource Request'),
+        ('collaboration_request', 'Collaboration Request'),
+        ('other', 'Other'),
+    ]
+
+    POSITION_CHOICES = [
+        ('president', 'President'),
+        ('vice_president', 'Vice President'),
+        ('secretary', 'Secretary'),
+        ('treasurer', 'Treasurer'),
+        ('event_coordinator', 'Event Coordinator'),
+        ('technical_head', 'Technical Head'),
+        ('marketing_head', 'Marketing Head'),
+        ('member', 'Member'),
+    ]
+
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('pending_faculty', 'Pending Faculty Approval'),
+        ('faculty_approved', 'Faculty Approved'),
+        ('faculty_rejected', 'Faculty Rejected'),
+        ('pending_admin', 'Pending Admin Approval'),
+        ('admin_approved', 'Admin Approved'),
+        ('admin_rejected', 'Admin Rejected'),
+        ('approved', 'Approved'),
+        ('implemented', 'Implemented'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    # Basic Information
+    application_id = models.CharField(max_length=20, unique=True, db_index=True)
+    application_type = models.CharField(max_length=30, choices=APPLICATION_TYPE_CHOICES)
+    club = models.ForeignKey('Club', on_delete=models.CASCADE, related_name='applications')
+    
+    # Applicant
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='submitted_club_applications'
+    )
+    
+    # Application Details
+    title = models.CharField(max_length=255, blank=True, default='')
+    description = models.TextField(blank=True, default='')
+    justification = models.TextField(help_text="Reason/justification for this request", blank=True, default='')
+    
+    # Type-specific fields (stored as JSON for flexibility)
+    application_data = models.JSONField(default=dict, blank=True, help_text="""
+        For member_addition: {target_user_id, target_username, target_email, proposed_position, reason}
+        For position_change: {user_id, current_position, new_position, effective_date, reason}
+        For budget_request: {amount, purpose, breakdown, expected_outcomes}
+        For resource_request: {resource_type, quantity, duration, purpose}
+        For club_info_update: {field_name, current_value, new_value}
+    """)
+    
+    # Supporting documents
+    attachments = models.JSONField(default=list, blank=True)
+    supporting_documents_url = models.URLField(blank=True)
+    
+    # Status & Workflow
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_faculty')
+    priority = models.IntegerField(default=0, help_text="Higher number = higher priority")
+    
+    # Faculty Approval
+    faculty_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='faculty_reviewed_club_applications'
+    )
+    faculty_reviewed_at = models.DateTimeField(null=True, blank=True)
+    faculty_comments = models.TextField(blank=True)
+    faculty_rejection_reason = models.TextField(blank=True)
+    
+    # Admin Approval
+    admin_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='admin_reviewed_club_applications'
+    )
+    admin_reviewed_at = models.DateTimeField(null=True, blank=True)
+    admin_comments = models.TextField(blank=True)
+    admin_rejection_reason = models.TextField(blank=True)
+    
+    # Implementation
+    implemented_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='implemented_club_applications'
+    )
+    implemented_at = models.DateTimeField(null=True, blank=True)
+    implementation_notes = models.TextField(blank=True)
+    
+    # Metadata
+    expected_impact = models.TextField(blank=True)
+    deadline = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['club', 'status']),
+            models.Index(fields=['application_type', 'status']),
+            models.Index(fields=['submitted_by', '-created_at']),
+            models.Index(fields=['status', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.application_id} - {self.get_application_type_display()} ({self.club.name})"
+
+    def save(self, *args, **kwargs):
+        # Generate application_id if not present
+        if not self.application_id:
+            from django.utils import timezone
+            import random
+            import string
+            date_str = timezone.now().strftime('%Y%m%d')
+            random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+            self.application_id = f"APP{date_str}{random_str}"
+        super().save(*args, **kwargs)
+
+    def approve_by_faculty(self, faculty_user, comments=''):
+        """Faculty approves the application."""
+        from django.utils import timezone
+        self.status = 'pending_admin'
+        self.faculty_reviewed_by = faculty_user
+        self.faculty_reviewed_at = timezone.now()
+        self.faculty_comments = comments
+        self.save()
+
+    def reject_by_faculty(self, faculty_user, reason):
+        """Faculty rejects the application."""
+        from django.utils import timezone
+        self.status = 'faculty_rejected'
+        self.faculty_reviewed_by = faculty_user
+        self.faculty_reviewed_at = timezone.now()
+        self.faculty_rejection_reason = reason
+        self.save()
+
+    def approve_by_admin(self, admin_user, comments=''):
+        """Admin approves the application."""
+        from django.utils import timezone
+        self.status = 'approved'
+        self.admin_reviewed_by = admin_user
+        self.admin_reviewed_at = timezone.now()
+        self.admin_comments = comments
+        self.save()
+
+    def reject_by_admin(self, admin_user, reason):
+        """Admin rejects the application."""
+        from django.utils import timezone
+        self.status = 'admin_rejected'
+        self.admin_reviewed_by = admin_user
+        self.admin_reviewed_at = timezone.now()
+        self.admin_rejection_reason = reason
+        self.save()
+
+    def mark_implemented(self, user, notes=''):
+        """Mark application as implemented."""
+        from django.utils import timezone
+        self.status = 'implemented'
+        self.implemented_by = user
+        self.implemented_at = timezone.now()
+        self.implementation_notes = notes
+        self.save()
+
+
+class ApplicationComment(models.Model):
+    """
+    Comments and discussion thread for applications.
+    Allows stakeholders to discuss application details.
+    """
+    application = models.ForeignKey(
+        'ClubApplication',
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='application_comments'
+    )
+    
+    # Comment content
+    comment = models.TextField()
+    is_internal = models.BooleanField(default=False, help_text="Only visible to faculty/admin")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Comment on {self.application.application_id} by {self.user.username}"

@@ -29,6 +29,12 @@
         ::-webkit-scrollbar-track { background: var(--stone-50); }
         ::-webkit-scrollbar-thumb { background: var(--stone-200); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--muted-blue); }
+        
+        .modal-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 60; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .club-card { cursor: pointer; transition: all 0.2s; }
+        .club-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .club-card.selected { border-color: #2d4a63; background-color: #f1f0ec; }
     </style>
 </head>
 <body class="antialiased">
@@ -104,12 +110,21 @@
                             </select>
                         </div>
 
+                        <!-- Club Selection (Only for Students & Faculty) -->
+                        <div id="club-field" class="hidden">
+                            <label class="block text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e] mb-3">Club ID <span class="text-red-500">*</span></label>
+                            <select id="club-input" class="w-full px-5 py-4 border border-[#e5e3da] rounded-sm text-[14px] focus:outline-none focus:border-[#2d4a63] focus:ring-2 focus:ring-[#2d4a63]/10 transition-all font-bold">
+                                <option value="">Loading clubs...</option>
+                            </select>
+                            <p class="mt-2 text-xs text-slate-500">Select your club ID for this session</p>
+                        </div>
+
                         <div id="username-field">
-                            <label id="username-label" class="block text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e] mb-3">Student ID</label>
+                            <label id="username-label" class="block text-[11px] font-bold uppercase tracking-widest text-[#1a1c1e] mb-3">Username or Email</label>
                             <input 
                                 id="username-input"
                                 type="text" 
-                                placeholder="Enter your student ID"
+                                placeholder="Enter your username or email"
                                 class="w-full px-5 py-4 border border-[#e5e3da] rounded-sm text-[14px] focus:outline-none focus:border-[#2d4a63] focus:ring-2 focus:ring-[#2d4a63]/10 transition-all"
                                 required
                             />
@@ -199,6 +214,22 @@
         </div>
     </footer>
 
+    <!-- Club Selection Modal -->
+    <div id="clubSelectionModal" class="modal-overlay">
+        <div class="bg-white rounded-sm p-8 max-w-2xl w-full mx-4 border border-[#e5e3da]">
+            <h2 class="text-2xl font-bold text-[#1a1c1e] mb-2">Select Your Active Club</h2>
+            <p class="text-sm text-slate-500 mb-6">Choose which club you want to work with in this session</p>
+            
+            <div id="clubsContainer" class="space-y-3 mb-6 max-h-96 overflow-y-auto">
+                <!-- Clubs will be populated here -->
+            </div>
+            
+            <button onclick="skipClubSelection()" class="w-full px-6 py-3 border border-[#e5e3da] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest hover:bg-[#f1f0ec] transition-colors">
+                Continue Without Selecting
+            </button>
+        </div>
+    </div>
+
     <script>
         // Role configurations
         const roleConfig = {
@@ -207,13 +238,14 @@
                 heading: { main: 'Welcome to Your', accent: 'Academic Gateway.', color: '#2d4a63' },
                 description: 'Access course materials, track your academic progress, and collaborate with peers through our unified institutional platform.',
                 formTitle: 'Student Login',
-                usernameLabel: 'Student ID',
-                usernamePlaceholder: 'Enter your student ID',
+                usernameLabel: 'Username or Email',
+                usernamePlaceholder: 'Enter your username or email',
                 buttonText: 'Sign In to Portal',
                 buttonColor: 'bg-[#2d4a63] hover:bg-[#1a1c1e]',
                 helpLink: 'Student Services',
                 showTwoFactor: false,
                 showDepartment: false,
+                showClubField: true,
                 showAdminNotice: false
             },
             faculty: {
@@ -228,6 +260,7 @@
                 helpLink: 'IT Support',
                 showTwoFactor: false,
                 showDepartment: false,
+                showClubField: true,
                 showAdminNotice: false
             },
             admin: {
@@ -242,6 +275,7 @@
                 helpLink: 'Security Team',
                 showTwoFactor: true,
                 showDepartment: false,
+                showClubField: false,
                 showAdminNotice: true
             },
             registrar: {
@@ -256,6 +290,7 @@
                 helpLink: 'Registrar Support',
                 showTwoFactor: false,
                 showDepartment: true,
+                showClubField: false,
                 showAdminNotice: false
             }
         };
@@ -302,7 +337,55 @@
             // Show/hide conditional fields
             document.getElementById('two-factor-field').classList.toggle('hidden', !config.showTwoFactor);
             document.getElementById('department-field').classList.toggle('hidden', !config.showDepartment);
+            document.getElementById('club-field').classList.toggle('hidden', !config.showClubField);
             document.getElementById('admin-notice').classList.toggle('hidden', !config.showAdminNotice);
+            
+            // Toggle required attribute on club field based on visibility
+            const clubInput = document.getElementById('club-input');
+            if (config.showClubField) {
+                clubInput.required = true;
+            } else {
+                clubInput.required = false;
+            }
+            
+            // Load clubs if showing club field
+            if (config.showClubField) {
+                loadAvailableClubs();
+            }
+        }
+
+        // Load available clubs from API
+        async function loadAvailableClubs() {
+            try {
+                // Fetch clubs from public endpoint (no auth required)
+                const response = await fetch('http://localhost:8000/api/auth/clubs/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const clubs = await response.json();
+                    const clubSelect = document.getElementById('club-input');
+                    clubSelect.innerHTML = '<option value="">Select Club ID</option>' +
+                        clubs.map(club => {
+                            // Show club_number (assigned during registration)
+                            return `<option value="${club.id}" 
+                                data-name="${club.name}" 
+                                data-club-number="${club.club_number}"
+                                data-email="${club.faculty_mentor_email || ''}">${club.club_number}</option>`;
+                        }).join('');
+                } else {
+                    console.error('Failed to load clubs:', response.status);
+                    const clubSelect = document.getElementById('club-input');
+                    clubSelect.innerHTML = '<option value="">Failed to load clubs - Please restart server</option>';
+                }
+            } catch (error) {
+                console.error('Error loading clubs:', error);
+                const clubSelect = document.getElementById('club-input');
+                clubSelect.innerHTML = '<option value="">Error - Please restart server</option>';
+            }
         }
 
         // Update UI on page load
@@ -359,16 +442,59 @@
                     localStorage.setItem('refresh_token', data.refresh);
                     localStorage.setItem('user_role', role);
                     localStorage.setItem('user_id', data.user?.id || username);
+                    
+                    // Store complete user data
+                    if (data.user) {
+                        localStorage.setItem('user_data', JSON.stringify({
+                            id: data.user.id,
+                            username: data.user.username || username,
+                            first_name: data.user.first_name || '',
+                            last_name: data.user.last_name || '',
+                            email: data.user.email || '',
+                            role: role
+                        }));
+                    }
 
-                    // Redirect based on role
-                    const dashboards = {
-                        admin: '/dashboards/admin-dashboard.html',
-                        student: '/dashboards/student-dashboard.html',
-                        faculty: '/dashboards/faculty-dashboard.html',
-                        registrar: '/dashboards/registrar-dashboard.html'
-                    };
-
-                    window.location.href = dashboards[role] || '/dashboards/admin-dashboard.html';
+                    // If student, check if club was selected during login
+                    if (role === 'student') {
+                        const clubSelect = document.getElementById('club-input');
+                        const selectedClubId = clubSelect?.value;
+                        
+                        if (!selectedClubId) {
+                            throw new Error('Please select a club to continue');
+                        }
+                        
+                        // Save club context from login form
+                        const selectedOption = clubSelect.options[clubSelect.selectedIndex];
+                        localStorage.setItem('active_club_id', selectedClubId);
+                        localStorage.setItem('active_club_name', selectedOption.getAttribute('data-name') || selectedOption.text.split(' - ')[0]);
+                        localStorage.setItem('active_club_email', selectedOption.getAttribute('data-email') || '');
+                        localStorage.setItem('active_club_department', selectedOption.getAttribute('data-department') || '');
+                        window.location.href = '/dashboards/student-dashboard/student-dashboard.html';
+                    } else if (role === 'faculty') {
+                        // For faculty, check if club was selected
+                        const clubSelect = document.getElementById('club-input');
+                        const selectedClubId = clubSelect?.value;
+                        
+                        if (!selectedClubId) {
+                            throw new Error('Please select a club to continue');
+                        }
+                        
+                        // Save club context from login form
+                        const selectedOption = clubSelect.options[clubSelect.selectedIndex];
+                        localStorage.setItem('active_club_id', selectedClubId);
+                        localStorage.setItem('active_club_name', selectedOption.getAttribute('data-name') || selectedOption.text.split(' - ')[0]);
+                        localStorage.setItem('active_club_email', selectedOption.getAttribute('data-email') || '');
+                        localStorage.setItem('active_club_department', selectedOption.getAttribute('data-department') || '');
+                        window.location.href = '/dashboards/faculty-dashboard/faculty-dashboard.html';
+                    } else {
+                        // Redirect based on role
+                        const dashboards = {
+                            admin: '/dashboards/admin-dashboard.html',
+                            registrar: '/dashboards/registrar-dashboard.html'
+                        };
+                        window.location.href = dashboards[role] || '/dashboards/admin-dashboard.html';
+                    }
                 } else {
                     throw new Error('No authentication tokens received');
                 }
@@ -380,6 +506,95 @@
                 submitBtn.textContent = roleConfig[role].buttonText;
             }
         });
+
+        // Show club selection modal for students
+        async function showClubSelectionModal(token) {
+            try {
+                // Fetch user's clubs
+                const response = await fetch('http://localhost:8000/api/auth/my-clubs/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const clubs = await response.json();
+                    
+                    if (clubs.length === 0) {
+                        // No clubs, redirect to dashboard based on role
+                        const userRole = localStorage.getItem('user_role');
+                        const dashboards = {
+                            student: '/dashboards/student-dashboard/student-dashboard.html',
+                            faculty: '/dashboards/faculty-dashboard/faculty-dashboard.html'
+                        };
+                        window.location.href = dashboards[userRole] || '/dashboards/student-dashboard/student-dashboard.html';
+                        return;
+                    }
+
+                    // Show modal with clubs
+                    const modal = document.getElementById('clubSelectionModal');
+                    const clubsContainer = document.getElementById('clubsContainer');
+                    
+                    clubsContainer.innerHTML = clubs.map(club => `
+                        <div class="club-card p-4 border-2 border-[#e5e3da] rounded-sm" data-club-id="${club.club_id}" onclick="selectClub(${club.club_id}, '${club.club_name}', '${club.role}', '${club.department}')">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-lg font-bold text-[#1a1c1e]">${club.club_name}</h3>
+                                ${club.status === 'approved' ? '<span class="text-xs font-bold text-green-600">✓ ACTIVE</span>' : '<span class="text-xs font-bold text-yellow-600">⏳ PENDING</span>'}
+                            </div>
+                            <p class="text-sm text-slate-500">Role: ${club.role}</p>
+                            ${club.department ? `<p class="text-xs text-slate-400">Dept: ${club.department}</p>` : ''}
+                        </div>
+                    `).join('');
+                    
+                    modal.classList.add('active');
+                } else {
+                    // If error, redirect to dashboard based on role
+                    const userRole = localStorage.getItem('user_role');
+                    const dashboards = {
+                        student: '/dashboards/student-dashboard/student-dashboard.html',
+                        faculty: '/dashboards/faculty-dashboard/faculty-dashboard.html'
+                    };
+                    window.location.href = dashboards[userRole] || '/dashboards/student-dashboard/student-dashboard.html';
+                }
+            } catch (error) {
+                console.error('Error fetching clubs:', error);
+                const userRole = localStorage.getItem('user_role');
+                const dashboards = {
+                    student: '/dashboards/student-dashboard/student-dashboard.html',
+                    faculty: '/dashboards/faculty-dashboard/faculty-dashboard.html'
+                };
+                window.location.href = dashboards[userRole] || '/dashboards/student-dashboard/student-dashboard.html';
+            }
+        }
+
+        function selectClub(clubId, clubName, role, department) {
+            // Store selected club in localStorage
+            localStorage.setItem('active_club_id', clubId);
+            localStorage.setItem('active_club_name', clubName);
+            localStorage.setItem('active_club_role', role);
+            if (department) {
+                localStorage.setItem('active_club_department', department);
+            }
+            
+            // Redirect to dashboard based on user role
+            const userRole = localStorage.getItem('user_role');
+            const dashboards = {
+                student: '/dashboards/student-dashboard/student-dashboard.html',
+                faculty: '/dashboards/faculty-dashboard/faculty-dashboard.html'
+            };
+            window.location.href = dashboards[userRole] || '/dashboards/student-dashboard/student-dashboard.html';
+        }
+
+        function skipClubSelection() {
+            // Redirect without selecting a club based on user role
+            const userRole = localStorage.getItem('user_role');
+            const dashboards = {
+                student: '/dashboards/student-dashboard/student-dashboard.html',
+                faculty: '/dashboards/faculty-dashboard/faculty-dashboard.html'
+            };
+            window.location.href = dashboards[userRole] || '/dashboards/student-dashboard/student-dashboard.html';
+        }
     </script>
 
 </body>

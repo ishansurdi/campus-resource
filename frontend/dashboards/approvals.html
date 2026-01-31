@@ -256,22 +256,73 @@
 
         async function loadApprovals() {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:8000/api/auth/approvals/', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                const token = localStorage.getItem('access_token');
+                
+                // Load both pending event applications and club applications
+                const [eventsResponse, clubAppsResponse] = await Promise.all([
+                    fetch('http://localhost:8000/api/auth/event-applications/pending-admin/', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }),
+                    fetch('http://localhost:8000/api/auth/club-applications/pending-admin/', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                ]);
 
-                if (response.ok) {
-                    allApprovals = await response.json();
+                if (eventsResponse.ok && clubAppsResponse.ok) {
+                    const eventsData = await eventsResponse.json();
+                    const clubAppsData = await clubAppsResponse.json();
+                    
+                    // Combine and format both types to match the table structure
+                    const pendingEvents = (eventsData.pending_events || []).map(event => ({
+                        id: event.id,
+                        request_type: 'event',
+                        title: event.title,
+                        description: event.description,
+                        club_name: event.club.name,
+                        requested_by_name: event.created_by.name,
+                        current_reviewer_role: event.faculty_approved_by ? event.faculty_approved_by.name : 'Admin Review',
+                        status: 'pending',
+                        created_at: event.created_at,
+                        priority: 'medium',
+                        amount: event.estimated_budget,
+                        details: event
+                    }));
+                    
+                    const pendingClubApps = (clubAppsData.pending_applications || []).map(app => ({
+                        id: app.id,
+                        request_type: 'club_application',
+                        title: app.title || 'Club Application',
+                        description: app.description,
+                        club_name: app.club.name,
+                        requested_by_name: app.submitted_by ? app.submitted_by.name : 'Unknown',
+                        current_reviewer_role: app.faculty_approved_by ? app.faculty_approved_by.name : 'Admin Review',
+                        status: 'pending',
+                        created_at: app.created_at,
+                        priority: app.priority || 'medium',
+                        amount: null,
+                        details: app
+                    }));
+                    
+                    allApprovals = [...pendingEvents, ...pendingClubApps];
                     renderApprovals(allApprovals);
                     updateStats(allApprovals);
                 } else {
                     console.error('Failed to load approvals');
+                    document.getElementById('approvalsTableBody').innerHTML = `
+                        <tr><td colspan="8" class="text-center py-8 text-slate-500">Failed to load approvals</td></tr>
+                    `;
                 }
             } catch (error) {
                 console.error('Error loading approvals:', error);
+                document.getElementById('approvalsTableBody').innerHTML = `
+                    <tr><td colspan="8" class="text-center py-8 text-slate-500">Error loading approvals</td></tr>
+                `;
             }
         }
 
@@ -342,23 +393,13 @@
         async function showDetails(approvalId) {
             selectedApprovalId = approvalId;
             
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8000/api/auth/approvals/${approvalId}/`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.ok) {
-                    const approval = await response.json();
-                    populateDetailModal(approval);
-                    document.getElementById('detailModal').classList.add('active');
-                } else {
-                    console.error('Failed to load approval details');
-                }
-            } catch (error) {
-                console.error('Error loading approval details:', error);
+            // Find the approval in the loaded data instead of making API call
+            const approval = allApprovals.find(a => a.id === approvalId);
+            if (approval) {
+                populateDetailModal(approval);
+                document.getElementById('detailModal').classList.add('active');
+            } else {
+                console.error('Approval not found');
             }
         }
 
@@ -462,15 +503,33 @@
             
             const notes = document.getElementById('adminNotes').value;
             
+            // Find the approval to determine its type
+            const approval = allApprovals.find(a => a.id === selectedApprovalId);
+            if (!approval) {
+                alert('Approval not found');
+                return;
+            }
+            
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8000/api/auth/approvals/${selectedApprovalId}/approve/`, {
+                const token = localStorage.getItem('access_token');
+                
+                // Determine the correct endpoint based on type
+                let url;
+                if (approval.request_type === 'event') {
+                    url = `http://localhost:8000/api/auth/event-applications/${selectedApprovalId}/admin-approve/`;
+                } else {
+                    // Club application endpoint (when implemented)
+                    alert('Club application approval not yet implemented');
+                    return;
+                }
+                
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ admin_notes: notes })
+                    body: JSON.stringify({ comments: notes || '' })
                 });
 
                 if (response.ok) {
@@ -478,7 +537,8 @@
                     closeDetailModal();
                     loadApprovals();
                 } else {
-                    alert('Failed to approve request');
+                    const error = await response.json();
+                    alert(`Failed to approve: ${error.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('Error approving request:', error);
@@ -494,17 +554,35 @@
             
             const notes = document.getElementById('adminNotes').value;
             
+            // Find the approval to determine its type
+            const approval = allApprovals.find(a => a.id === selectedApprovalId);
+            if (!approval) {
+                alert('Approval not found');
+                return;
+            }
+            
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8000/api/auth/approvals/${selectedApprovalId}/reject/`, {
+                const token = localStorage.getItem('access_token');
+                
+                // Determine the correct endpoint based on type
+                let url;
+                if (approval.request_type === 'event') {
+                    url = `http://localhost:8000/api/auth/event-applications/${selectedApprovalId}/admin-reject/`;
+                } else {
+                    // Club application endpoint (when implemented)
+                    alert('Club application rejection not yet implemented');
+                    return;
+                }
+                
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ 
-                        rejection_reason: reason,
-                        admin_notes: notes 
+                        reason: reason,
+                        comments: notes || ''
                     })
                 });
 
@@ -513,7 +591,8 @@
                     closeDetailModal();
                     loadApprovals();
                 } else {
-                    alert('Failed to reject request');
+                    const error = await response.json();
+                    alert(`Failed to reject: ${error.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('Error rejecting request:', error);

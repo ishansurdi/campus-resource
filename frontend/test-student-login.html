@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2d4a63; }
+        h2 { color: #3d706e; margin-top: 30px; }
+        .test-section {
+            background: #faf9f6;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #2d4a63;
+        }
+        button {
+            background: #2d4a63;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1a1c1e;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        pre {
+            background: #1a1c1e;
+            color: #c5a059;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        input {
+            padding: 10px;
+            margin: 5px 0;
+            width: 100%;
+            border: 2px solid #e5e3da;
+            border-radius: 4px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 CAMPUSPHERE - Student Login Test</h1>
+        <p>This page helps you test the student login functionality</p>
+
+        <div class="test-section">
+            <h2>Step 1: Check Backend Status</h2>
+            <p>Backend URL: <code id="backend-url">http://localhost:8000</code></p>
+            <button onclick="checkBackend()">Test Backend Connection</button>
+            <div id="backend-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 2: Create Test Student (Admin Required)</h2>
+            <p>Run this in Django shell to create a test student:</p>
+            <pre>python manage.py shell
+
+from authentication.models import AdminUser
+
+student = AdminUser.objects.create_user(
+    username='TEST_STUDENT',
+    email='test.student@campus.edu',
+    password='TestPass123!',
+    first_name='Test',
+    last_name='Student',
+    role='student',
+    student_id='TEST_STUDENT',
+    department='Computer Science'
+)
+print(f"Created student: {student.username}")</pre>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 3: Test Login</h2>
+            <form id="login-form" onsubmit="testLogin(event)">
+                <label>Username or Email:</label>
+                <input type="text" id="username" placeholder="ishansurdi2105 or email@example.com" value="ishansurdi2105">
+                
+                <label>Password:</label>
+                <input type="password" id="password" placeholder="1cLpNrUD3Um-rA" value="1cLpNrUD3Um-rA">
+                
+                <button type="submit">Test Login</button>
+            </form>
+            <div id="login-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 4: Check Authentication</h2>
+            <button onclick="checkAuth()">Check Current Auth Status</button>
+            <button onclick="clearAuth()">Clear Auth Tokens</button>
+            <div id="auth-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 5: Navigate to Dashboard</h2>
+            <button onclick="goToDashboard()">Open Student Dashboard</button>
+            <p><small>Note: You must be logged in first</small></p>
+        </div>
+
+        <div class="test-section">
+            <h2>Quick Links</h2>
+            <button onclick="window.location.href='/login.html?role=student'">Go to Login Page</button>
+            <button onclick="window.location.href='/dashboards/student-dashboard/student-dashboard.html'">Go to Dashboard</button>
+            <button onclick="window.location.href='/index.html'">Go to Home</button>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:8000';
+
+        async function checkBackend() {
+            const statusDiv = document.getElementById('backend-status');
+            statusDiv.innerHTML = '<p>Checking...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/login/`, {
+                    method: 'OPTIONS'
+                });
+                
+                statusDiv.innerHTML = `
+                    <div class="status" style="background: #d4edda; border: 1px solid #c3e6cb;">
+                        <p class="success">✅ Backend is running!</p>
+                        <p>Status: ${response.status}</p>
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="status" style="background: #f8d7da; border: 1px solid #f5c6cb;">
+                        <p class="error">❌ Backend not reachable</p>
+                        <p>Error: ${error.message}</p>
+                        <p><strong>Make sure to run:</strong> <code>cd backend && python manage.py runserver</code></p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('login-status');
+            
+            statusDiv.innerHTML = '<p>Logging in...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        role: 'student'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store tokens
+                    localStorage.setItem('access_token', data.access);
+                    localStorage.setItem('refresh_token', data.refresh);
+                    localStorage.setItem('user_role', 'student');
+                    localStorage.setItem('user_id', data.user.id);
+
+                    statusDiv.innerHTML = `
+                        <div class="status" style="background: #d4edda; border: 1px solid #c3e6cb;">
+                            <p class="success">✅ Login Successful!</p>
+                            <p><strong>User:</strong> ${data.user.username}</p>
+                            <p><strong>Name:</strong> ${data.user.first_name} ${data.user.last_name}</p>
+                            <p><strong>Email:</strong> ${data.user.email}</p>
+                            <p><strong>Role:</strong> ${data.user.role}</p>
+                            <p><strong>Department:</strong> ${data.user.department}</p>
+                            <details>
+                                <summary>View Tokens</summary>
+                                <pre style="font-size: 10px;">${JSON.stringify(data, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="status" style="background: #f8d7da; border: 1px solid #f5c6cb;">
+                            <p class="error">❌ Login Failed</p>
+                            <p><strong>Error:</strong> ${data.error || data.detail || 'Unknown error'}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="status" style="background: #f8d7da; border: 1px solid #f5c6cb;">
+                        <p class="error">❌ Connection Error</p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function checkAuth() {
+            const statusDiv = document.getElementById('auth-status');
+            const accessToken = localStorage.getItem('access_token');
+            const refreshToken = localStorage.getItem('refresh_token');
+            const role = localStorage.getItem('user_role');
+            const userId = localStorage.getItem('user_id');
+
+            if (accessToken) {
+                statusDiv.innerHTML = `
+                    <div class="status" style="background: #d4edda; border: 1px solid #c3e6cb;">
+                        <p class="success">✅ User is authenticated</p>
+                        <p><strong>Role:</strong> ${role}</p>
+                        <p><strong>User ID:</strong> ${userId}</p>
+                        <details>
+                            <summary>View Tokens</summary>
+                            <p><strong>Access Token:</strong></p>
+                            <pre style="font-size: 10px; word-break: break-all;">${accessToken}</pre>
+                            <p><strong>Refresh Token:</strong></p>
+                            <pre style="font-size: 10px; word-break: break-all;">${refreshToken}</pre>
+                        </details>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="status" style="background: #fff3cd; border: 1px solid #ffeaa7;">
+                        <p class="error">⚠️ No authentication found</p>
+                        <p>Please login first</p>
+                    </div>
+                `;
+            }
+        }
+
+        function clearAuth() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user_role');
+            localStorage.removeItem('user_id');
+            
+            document.getElementById('auth-status').innerHTML = `
+                <div class="status" style="background: #d4edda; border: 1px solid #c3e6cb;">
+                    <p class="success">✅ Auth tokens cleared</p>
+                </div>
+            `;
+        }
+
+        function goToDashboard() {
+            const accessToken = localStorage.getItem('access_token');
+            if (!accessToken) {
+                alert('Please login first!');
+                return;
+            }
+            window.location.href = '/dashboards/student-dashboard/student-dashboard.html';
+        }
+    </script>
+</body>
+</html>

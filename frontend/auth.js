@@ -7,9 +7,23 @@ function isLoggedIn() {
 
 // Get current user info
 function getCurrentUser() {
+    const userDataStr = localStorage.getItem('user_data');
+    if (userDataStr) {
+        try {
+            return JSON.parse(userDataStr);
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+        }
+    }
+    
+    // Fallback to old method
     return {
         role: localStorage.getItem('user_role'),
         id: localStorage.getItem('user_id'),
+        username: localStorage.getItem('username') || 'User',
+        first_name: localStorage.getItem('first_name') || '',
+        last_name: localStorage.getItem('last_name') || '',
+        email: localStorage.getItem('email') || '',
         token: localStorage.getItem('access_token')
     };
 }
@@ -20,6 +34,11 @@ function logout() {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_role');
     localStorage.removeItem('user_id');
+    localStorage.removeItem('user_data');
+    localStorage.removeItem('active_club_id');
+    localStorage.removeItem('active_club_name');
+    localStorage.removeItem('active_club_role');
+    localStorage.removeItem('active_club_department');
     window.location.href = '/index.html';
 }
 

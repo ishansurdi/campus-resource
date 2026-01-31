@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events | CAMPUSPHERE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="../../auth.js"></script>
+    <script>
+        // Protect this page - only students can access
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!protectPage('student')) {
+                return;
+            }
+            
+            // Initialize page
+            loadUserInfo();
+            initEventsPage();
+        });
+
+        let currentTab = 'upcoming';
+        let allEvents = [];
+        let myRegistrations = [];
+        let myAttendances = [];
+        let myCertificates = [];
+        let myApplications = [];
+        let allClubs = [];
+
+        async function initEventsPage() {
+            await loadClubs();
+            await loadAllEvents();
+            await loadMyRegistrations();
+            await loadMyAttendances();
+            await loadMyCertificates();
+            await loadMyApplications();
+            
+            // Check if URL hash indicates applications tab
+            if (window.location.hash === '#applications') {
+                switchTab('myapplications');
+            } else {
+                switchTab('upcoming');
+            }
+        }
+
+        async function loadUserInfo() {
+            const user = getCurrentUser();
+            if (user) {
+                const initials = user.first_name && user.last_name
+                    ? `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`
+                    : user.username.substring(0, 2).toUpperCase();
+                
+                document.getElementById('userInitials').textContent = initials;
+                document.getElementById('userName').textContent = user.first_name && user.last_name 
+                    ? `${user.first_name} ${user.last_name}` 
+                    : user.username;
+            }
+        }
+
+        async function loadClubs() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/clubs/all/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    allClubs = await response.json();
+                    populateClubFilter();
+                }
+            } catch (error) {
+                console.error('Error loading clubs:', error);
+            }
+        }
+
+        function populateClubFilter() {
+            const select = document.getElementById('clubFilter');
+            select.innerHTML = '<option value="">All Clubs</option>';
+            allClubs.forEach(club => {
+                const option = document.createElement('option');
+                option.value = club.id;
+                option.textContent = club.name;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadAllEvents() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/events/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    allEvents = await response.json();
+                    console.log('Loaded events:', allEvents);
+                } else {
+                    showMessage('Failed to load events', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading events:', error);
+                showMessage('Error loading events', 'error');
+            }
+        }
+
+        async function loadMyRegistrations() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/event-registrations/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    myRegistrations = await response.json();
+                    console.log('My registrations:', myRegistrations);
+                }
+            } catch (error) {
+                console.error('Error loading registrations:', error);
+            }
+        }
+
+        async function loadMyAttendances() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/my-event-attendances/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    myAttendances = await response.json();
+                    console.log('My attendances:', myAttendances);
+                }
+            } catch (error) {
+                console.error('Error loading attendances:', error);
+            }
+        }
+
+        async function loadMyCertificates() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/my-certificates/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    myCertificates = await response.json();
+                    console.log('My certificates:', myCertificates);
+                }
+            } catch (error) {
+                console.error('Error loading certificates:', error);
+            }
+        }
+
+        async function loadMyApplications() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/my-event-applications/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    myApplications = data.applications || [];
+                    console.log('My applications:', myApplications);
+                }
+            } catch (error) {
+                console.error('Error loading applications:', error);
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-[#2d4a63]', 'text-white');
+                btn.classList.add('text-slate-600');
+            });
+            const activeBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'bg-[#2d4a63]', 'text-white');
+                activeBtn.classList.remove('text-slate-600');
+            }
+            
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show active tab content
+            const activeContent = document.getElementById(`${tab}Tab`);
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+            }
+            
+            // Load appropriate content
+            if (tab === 'upcoming' || tab === 'ongoing' || tab === 'past') {
+                displayBrowseEvents(tab);
+            } else if (tab === 'myevents') {
+                displayMyEvents();
+            } else if (tab === 'myapplications') {
+                displayMyApplications();
+            }
+        }
+
+        function displayBrowseEvents(statusFilter) {
+            const container = document.getElementById(`${statusFilter}Tab`);
+            if (!container) return;
+            
+            const filtered = applyFilters(allEvents, statusFilter);
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <p class="text-slate-500 font-bold">No ${statusFilter} events found</p>
+                        <p class="text-xs text-slate-400 mt-2">Check back later for new events</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const eventsHtml = filtered.map(event => createEventCard(event)).join('');
+            container.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">${eventsHtml}</div>`;
+        }
+
+        function applyFilters(events, statusFilter) {
+            let filtered = events.filter(event => {
+                if (statusFilter === 'upcoming' && !event.is_upcoming) return false;
+                if (statusFilter === 'ongoing' && !event.is_ongoing) return false;
+                if (statusFilter === 'past' && !event.is_past) return false;
+                return true;
+            });
+            
+            // Apply club filter
+            const clubFilter = document.getElementById('clubFilter')?.value;
+            if (clubFilter) {
+                filtered = filtered.filter(event => 
+                    event.primary_club.id == clubFilter || 
+                    event.collaborating_clubs.some(c => c.id == clubFilter)
+                );
+            }
+            
+            // Apply joint event filter
+            const jointFilter = document.getElementById('jointFilter')?.value;
+            if (jointFilter === 'true') {
+                filtered = filtered.filter(event => event.is_joint_event);
+            } else if (jointFilter === 'false') {
+                filtered = filtered.filter(event => !event.is_joint_event);
+            }
+            
+            // Apply search
+            const search = document.getElementById('searchInput')?.value?.toLowerCase();
+            if (search) {
+                filtered = filtered.filter(event => 
+                    event.title.toLowerCase().includes(search) ||
+                    event.description.toLowerCase().includes(search) ||
+                    event.event_type.toLowerCase().includes(search)
+                );
+            }
+            
+            return filtered;
+        }
+
+        function createEventCard(event) {
+            const startDate = new Date(event.start_date);
+            const endDate = new Date(event.end_date);
+            const isRegistered = myRegistrations.some(r => r.event.id === event.id);
+            const statusBadge = event.is_upcoming ? 'bg-blue-100 text-blue-700' : 
+                               event.is_ongoing ? 'bg-green-100 text-green-700' : 
+                               'bg-gray-100 text-gray-700';
+            const statusText = event.is_upcoming ? 'UPCOMING' : 
+                              event.is_ongoing ? 'ONGOING' : 
+                              'PAST';
+            
+            const capacityPercent = event.max_participants ? 
+                (event.current_registrations / event.max_participants * 100).toFixed(0) : 0;
+            const capacityColor = capacityPercent >= 90 ? 'bg-red-500' : 
+                                 capacityPercent >= 70 ? 'bg-yellow-500' : 
+                                 'bg-green-500';
+            
+            return `
+                <div class="bg-white border border-[#e5e3da] rounded-sm overflow-hidden hover:shadow-lg transition-shadow">
+                    ${event.poster_url ? `
+                        <div class="h-48 bg-cover bg-center" style="background-image: url('${event.poster_url}')"></div>
+                    ` : `
+                        <div class="h-48 bg-gradient-to-br from-[#2d4a63] to-[#3d706e] flex items-center justify-center">
+                            <div class="text-white text-4xl font-bold">${event.title.substring(0, 2).toUpperCase()}</div>
+                        </div>
+                    `}
+                    
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-widest ${statusBadge} px-3 py-1 rounded-sm">${statusText}</span>
+                            ${event.is_joint_event ? '<span class="text-xs font-bold text-[#c5a059]">🤝 JOINT EVENT</span>' : ''}
+                        </div>
+                        
+                        <h3 class="text-lg font-bold text-[#1a1c1e] mb-2">${event.title}</h3>
+                        <p class="text-sm text-slate-600 mb-4 line-clamp-2">${event.description}</p>
+                        
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center gap-2 text-xs text-slate-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                <span class="font-bold">${event.primary_club.name}</span>
+                                ${event.collaborating_clubs.length > 0 ? ` + ${event.collaborating_clubs.length} more` : ''}
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-slate-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                ${formatDate(startDate)} - ${formatDate(endDate)}
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-slate-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                ${event.venue}
+                            </div>
+                        </div>
+                        
+                        ${event.requires_registration && event.max_participants ? `
+                            <div class="mb-4">
+                                <div class="flex items-center justify-between text-xs mb-1">
+                                    <span class="text-slate-600 font-bold">Capacity</span>
+                                    <span class="font-bold">${event.current_registrations}/${event.max_participants}</span>
+                                </div>
+                                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="${capacityColor} h-full transition-all" style="width: ${capacityPercent}%"></div>
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex gap-3">
+                            <button onclick="viewEventDetails(${event.id})" class="flex-1 px-4 py-2 bg-[#f1f0ec] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#e5e3da] transition-colors">
+                                View Details
+                            </button>
+                            ${event.requires_registration && event.registration_open && !isRegistered && !event.is_past ? `
+                                <button onclick="registerForEvent(${event.id})" class="flex-1 px-4 py-2 bg-[#2d4a63] text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#1a1c1e] transition-colors">
+                                    ${event.registration_fee > 0 ? `Register (₹${event.registration_fee})` : 'Register Free'}
+                                </button>
+                            ` : isRegistered ? `
+                                <button disabled class="flex-1 px-4 py-2 bg-green-100 text-green-700 text-xs font-bold uppercase tracking-widest rounded-sm cursor-not-allowed">
+                                    ✓ Registered
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayMyEvents() {
+            const container = document.getElementById('myeventsTab');
+            if (!container) return;
+            
+            const registeredEvents = myRegistrations.map(reg => ({
+                ...reg,
+                type: 'registration'
+            }));
+            
+            const attendedEvents = myAttendances.map(att => ({
+                ...att,
+                type: 'attendance'
+            }));
+            
+            const certificates = myCertificates.map(cert => ({
+                ...cert,
+                type: 'certificate'
+            }));
+            
+            if (registeredEvents.length === 0 && attendedEvents.length === 0 && certificates.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-slate-500 font-bold">No event activity yet</p>
+                        <p class="text-xs text-slate-400 mt-2">Register for events to see them here</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            if (registeredEvents.length > 0) {
+                html += `
+                    <div class="mb-8">
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">My Registrations</h3>
+                        <div class="space-y-3">
+                            ${registeredEvents.map(reg => `
+                                <div class="bg-white border border-[#e5e3da] rounded-sm p-4 flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-bold text-[#1a1c1e]">${reg.event.title}</div>
+                                        <div class="text-xs text-slate-500 mt-1">
+                                            ${formatDate(new Date(reg.event.start_date))} • ${reg.event.venue}
+                                        </div>
+                                        <div class="text-xs text-slate-400 mt-1">Registration #${reg.registration_number}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs font-bold uppercase tracking-widest ${reg.status === 'confirmed' ? 'text-green-700 bg-green-100' : reg.status === 'pending' ? 'text-yellow-700 bg-yellow-100' : 'text-gray-700 bg-gray-100'} px-3 py-1 rounded-sm mb-2">
+                                            ${reg.status}
+                                        </div>
+                                        ${reg.payment_status !== 'waived' ? `
+                                            <div class="text-xs text-slate-500">Payment: ${reg.payment_status}</div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (attendedEvents.length > 0) {
+                html += `
+                    <div class="mb-8">
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Attendance History</h3>
+                        <div class="space-y-3">
+                            ${attendedEvents.map(att => `
+                                <div class="bg-white border border-[#e5e3da] rounded-sm p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-bold text-[#1a1c1e]">${att.event.title}</div>
+                                            <div class="text-xs text-slate-500 mt-1">${att.event.primary_club_name}</div>
+                                        </div>
+                                        <div class="text-xs font-bold uppercase tracking-widest ${att.status === 'present' ? 'text-green-700 bg-green-100' : 'text-gray-700 bg-gray-100'} px-3 py-1 rounded-sm">
+                                            ${att.status}
+                                        </div>
+                                    </div>
+                                    ${att.check_in_time ? `
+                                        <div class="text-xs text-slate-600 mb-2">
+                                            Check-in: ${formatDateTime(new Date(att.check_in_time))}
+                                            ${att.duration_minutes ? ` • Duration: ${att.duration_minutes} mins` : ''}
+                                        </div>
+                                    ` : ''}
+                                    ${att.certificate_eligible && !att.feedback_rating ? `
+                                        <button onclick="submitFeedback(${att.id})" class="text-xs font-bold text-[#2d4a63] hover:underline">
+                                            Submit Feedback →
+                                        </button>
+                                    ` : ''}
+                                    ${att.certificate ? `
+                                        <div class="mt-2 flex items-center gap-2 text-xs text-green-700">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            Certificate issued
+                                        </div>
+                                    ` : att.certificate_eligible ? `
+                                        <div class="mt-2 text-xs text-blue-700">Certificate pending</div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (certificates.length > 0) {
+                html += `
+                    <div>
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">My Certificates</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            ${certificates.map(cert => `
+                                <div class="bg-gradient-to-br from-[#c5a059] to-[#a08647] text-white rounded-sm p-6 relative overflow-hidden">
+                                    <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+                                    <div class="relative z-10">
+                                        <div class="text-xs font-bold uppercase tracking-widest mb-2">${cert.certificate_type.replace('_', ' ')}</div>
+                                        <div class="text-lg font-bold mb-1">${cert.event_title}</div>
+                                        <div class="text-sm opacity-90 mb-4">${cert.title}</div>
+                                        ${cert.achievement_details ? `<div class="text-xs opacity-75 mb-4">${cert.achievement_details}</div>` : ''}
+                                        <div class="flex items-center justify-between">
+                                            <div class="text-xs">Issued: ${formatDate(new Date(cert.issued_at))}</div>
+                                            ${cert.certificate_url ? `
+                                                <a href="${cert.certificate_url}" target="_blank" class="text-xs font-bold uppercase tracking-widest bg-white text-[#c5a059] px-3 py-1 rounded-sm hover:bg-opacity-90">
+                                                    Download
+                                                </a>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function applySearchFilters() {
+            displayBrowseEvents(currentTab);
+        }
+
+        async function viewEventDetails(eventId) {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`http://localhost:8000/api/auth/events/${eventId}/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const event = await response.json();
+                    showEventDetailsModal(event);
+                } else {
+                    showMessage('Failed to load event details', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading event details:', error);
+                showMessage('Error loading event details', 'error');
+            }
+        }
+
+        function showEventDetailsModal(event) {
+            const modal = document.getElementById('eventDetailsModal');
+            const content = document.getElementById('eventDetailsContent');
+            
+            const startDate = new Date(event.start_date);
+            const endDate = new Date(event.end_date);
+            
+            content.innerHTML = `
+                <div class="space-y-6">
+                    ${event.poster_url ? `
+                        <img src="${event.poster_url}" alt="${event.title}" class="w-full h-64 object-cover rounded-sm">
+                    ` : ''}
+                    
+                    <div>
+                        <h2 class="text-2xl font-bold text-[#1a1c1e] mb-2">${event.title}</h2>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-sm ${event.is_upcoming ? 'bg-blue-100 text-blue-700' : event.is_ongoing ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">
+                                ${event.is_upcoming ? 'UPCOMING' : event.is_ongoing ? 'ONGOING' : 'PAST'}
+                            </span>
+                            <span class="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-sm bg-[#f1f0ec] text-[#1a1c1e]">
+                                ${event.event_type}
+                            </span>
+                            ${event.is_joint_event ? '<span class="text-xs font-bold text-[#c5a059]">🤝 JOINT EVENT</span>' : ''}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-2">Description</h3>
+                        <p class="text-sm text-slate-600">${event.description}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Hosting Club${event.collaborating_clubs.length > 0 ? 's' : ''}</h3>
+                            <div class="text-sm font-bold text-[#1a1c1e]">${event.primary_club.name}</div>
+                            ${event.collaborating_clubs.map(club => `
+                                <div class="text-sm text-slate-600">${club.name}</div>
+                            `).join('')}
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Date & Time</h3>
+                            <div class="text-sm text-[#1a1c1e]">${formatDateTime(startDate)}</div>
+                            <div class="text-sm text-slate-600">to ${formatDateTime(endDate)}</div>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Venue</h3>
+                            <div class="text-sm text-[#1a1c1e]">${event.venue}</div>
+                            ${event.venue_address ? `<div class="text-xs text-slate-500">${event.venue_address}</div>` : ''}
+                            ${event.is_online && event.online_meeting_link ? `
+                                <a href="${event.online_meeting_link}" target="_blank" class="text-xs text-blue-600 hover:underline">Online Link</a>
+                            ` : ''}
+                        </div>
+                        ${event.primary_coordinator ? `
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Coordinator</h3>
+                                <div class="text-sm text-[#1a1c1e]">${event.primary_coordinator}</div>
+                                ${event.contact_email ? `<div class="text-xs text-slate-500">${event.contact_email}</div>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${event.requires_registration ? `
+                        <div class="bg-[#f1f0ec] rounded-sm p-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-2">Registration</h3>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <div class="text-xs text-slate-500">Registration Fee</div>
+                                    <div class="font-bold text-[#1a1c1e]">${event.registration_fee > 0 ? `₹${event.registration_fee}` : 'Free'}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-slate-500">Capacity</div>
+                                    <div class="font-bold text-[#1a1c1e]">${event.current_registrations}${event.max_participants ? `/${event.max_participants}` : ''}</div>
+                                </div>
+                                ${event.registration_start ? `
+                                    <div>
+                                        <div class="text-xs text-slate-500">Registration Period</div>
+                                        <div class="text-xs text-[#1a1c1e]">${formatDate(new Date(event.registration_start))} - ${formatDate(new Date(event.registration_end))}</div>
+                                    </div>
+                                ` : ''}
+                                ${event.user_registration ? `
+                                    <div>
+                                        <div class="text-xs text-slate-500">Your Status</div>
+                                        <div class="text-xs font-bold uppercase tracking-widest ${event.user_registration.status === 'confirmed' ? 'text-green-700' : 'text-yellow-700'}">
+                                            ${event.user_registration.status}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="flex gap-3">
+                        <button onclick="closeModal('eventDetailsModal')" class="flex-1 px-4 py-2 bg-[#f1f0ec] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#e5e3da]">
+                            Close
+                        </button>
+                        ${event.status === 'approved' || event.status === 'implemented' ? `
+                            <button onclick="viewEventLedger(${event.id})" class="flex-1 px-4 py-2 bg-[#c5a059] text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#a08545]">
+                                📊 View Ledger
+                            </button>
+                        ` : ''}
+                        ${event.requires_registration && event.registration_open && !event.is_registered && !event.is_past ? `
+                            <button onclick="registerForEvent(${event.id}); closeModal('eventDetailsModal');" class="flex-1 px-4 py-2 bg-[#2d4a63] text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#1a1c1e]">
+                                ${event.registration_fee > 0 ? `Register (₹${event.registration_fee})` : 'Register Free'}
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+
+        async function registerForEvent(eventId) {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/event-registrations/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage(`Successfully registered! Registration #${data.registration_number}`, 'success');
+                    await loadMyRegistrations();
+                    await loadAllEvents();
+                    displayBrowseEvents(currentTab);
+                } else {
+                    showMessage(data.error || 'Failed to register for event', 'error');
+                }
+            } catch (error) {
+                console.error('Error registering for event:', error);
+                showMessage('Error registering for event', 'error');
+            }
+        }
+
+        function submitFeedback(attendanceId) {
+            const modal = document.getElementById('feedbackModal');
+            document.getElementById('feedbackForm').dataset.attendanceId = attendanceId;
+            modal.classList.remove('hidden');
+        }
+
+        async function saveFeedback() {
+            const form = document.getElementById('feedbackForm');
+            const attendanceId = form.dataset.attendanceId;
+            const rating = document.querySelector('input[name="rating"]:checked')?.value;
+            const feedback = document.getElementById('feedbackText').value;
+            
+            if (!rating) {
+                showMessage('Please select a rating', 'error');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`http://localhost:8000/api/auth/event-feedback/${attendanceId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ rating, feedback })
+                });
+
+                if (response.ok) {
+                    showMessage('Feedback submitted successfully', 'success');
+                    closeModal('feedbackModal');
+                    await loadMyAttendances();
+                    displayMyEvents();
+                } else {
+                    showMessage('Failed to submit feedback', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting feedback:', error);
+                showMessage('Error submitting feedback', 'error');
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function formatDateTime(date) {
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const bgColor = type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+            container.innerHTML = `
+                <div class="${bgColor} px-4 py-3 rounded-sm text-sm font-bold">
+                    ${message}
+                </div>
+            `;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --stone-50: #faf9f6;
+            --stone-100: #f1f0ec;
+            --stone-200: #e5e3da;
+            --charcoal: #1a1c1e;
+            --muted-blue: #2d4a63;
+            --accent-gold: #c5a059;
+            --accent-teal: #3d706e;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--stone-50);
+            color: var(--charcoal);
+        }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone-50); }
+        ::-webkit-scrollbar-thumb { background: var(--stone-200); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted-blue); }
+
+        .sidebar-link {
+            transition: all 0.2s ease;
+        }
+        .sidebar-link:hover {
+            transform: translateX(4px);
+        }
+        .sidebar-link.active {
+            background-color: var(--stone-100);
+            border-left: 3px solid var(--muted-blue);
+        }
+        
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="antialiased bg-[#faf9f6]">
+
+    <div class="flex min-h-screen">
+        
+        <!-- Sidebar (same as student-dashboard) -->
+        <aside class="w-72 bg-white border-r border-[#e5e3da] fixed h-full overflow-y-auto">
+            <!-- Logo -->
+            <div class="p-8 border-b border-[#e5e3da]">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 bg-[#1a1c1e] flex items-center justify-center rounded-sm">
+                        <div class="w-4 h-4 border-2 border-[#c5a059] rotate-45"></div>
+                    </div>
+                    <span class="text-lg font-bold tracking-[0.15em] text-[#1a1c1e]">CAMPUSPHERE</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#faf9f6] rounded-sm">
+                    <div id="userInitials" class="w-10 h-10 rounded-full bg-[#2d4a63] flex items-center justify-center text-white font-bold text-sm">
+                        ST
+                    </div>
+                    <div>
+                        <div id="userName" class="text-[11px] font-bold text-[#1a1c1e]">Loading...</div>
+                        <div class="text-[9px] text-slate-400 uppercase tracking-widest">Student Portal</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="p-6">
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Main Menu</div>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="student-dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a href="profile.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                My Profile
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Activities</div>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="clubs.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                Clubs
+                            </a>
+                        </li>
+                        <li>
+                            <a href="events.html" class="sidebar-link active flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                Events
+                            </a>
+                        </li>
+                        <li>
+                            <a href="applications.html" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                Applications
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Communication</div>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#chats" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                Chats
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#documents" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                Documents
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">System</div>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#notifications" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm relative">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                                Notifications
+                                <span class="absolute right-3 top-3 w-2 h-2 bg-red-500 rounded-full"></span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#settings" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                Settings
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#logout" onclick="handleLogout(); return false;" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-red-500 hover:text-red-600 rounded-sm cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-72 flex-1 p-12">
+            
+            <!-- Header -->
+            <header class="mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 class="text-4xl font-bold text-[#1a1c1e] mb-2">Campus Events</h1>
+                        <p class="text-sm text-slate-500 uppercase tracking-widest">Discover, Register & Participate</p>
+                    </div>
+                </div>
+                
+                <!-- Message Container -->
+                <div id="messageContainer" class="mb-4"></div>
+                
+                <!-- Filters -->
+                <div class="bg-white border border-[#e5e3da] rounded-sm p-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Search Events</label>
+                            <input type="text" id="searchInput" placeholder="Search by title, description..." onchange="applySearchFilters()" 
+                                class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Club</label>
+                            <select id="clubFilter" onchange="applySearchFilters()" 
+                                class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                <option value="">All Clubs</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Event Type</label>
+                            <select id="jointFilter" onchange="applySearchFilters()" 
+                                class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                <option value="">All Events</option>
+                                <option value="true">Joint Events</option>
+                                <option value="false">Single Club</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tabs and Action Button -->
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-2 overflow-x-auto">
+                        <button onclick="switchTab('upcoming')" data-tab="upcoming" class="tab-btn px-6 py-3 text-xs font-bold uppercase tracking-widest rounded-sm transition-colors bg-[#2d4a63] text-white">
+                            Upcoming
+                        </button>
+                        <button onclick="switchTab('ongoing')" data-tab="ongoing" class="tab-btn px-6 py-3 text-xs font-bold uppercase tracking-widest rounded-sm transition-colors text-slate-600">
+                            Ongoing
+                        </button>
+                        <button onclick="switchTab('past')" data-tab="past" class="tab-btn px-6 py-3 text-xs font-bold uppercase tracking-widest rounded-sm transition-colors text-slate-600">
+                            Past
+                        </button>
+                        <button onclick="switchTab('myevents')" data-tab="myevents" class="tab-btn px-6 py-3 text-xs font-bold uppercase tracking-widest rounded-sm transition-colors text-slate-600">
+                            My Events
+                        </button>
+                        <button onclick="switchTab('myapplications')" data-tab="myapplications" class="tab-btn px-6 py-3 text-xs font-bold uppercase tracking-widest rounded-sm transition-colors text-slate-600">
+                            My Applications
+                        </button>
+                    </div>
+                    <button onclick="openApplicationModal()" class="px-6 py-3 bg-[#c5a059] text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#a08647] transition-colors whitespace-nowrap flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Apply for New Event
+                    </button>
+                </div>
+            </header>
+
+            <!-- Tab Contents -->
+            <div id="upcomingTab" class="tab-content">
+                <div class="text-center py-12 text-slate-400">Loading upcoming events...</div>
+            </div>
+            
+            <div id="ongoingTab" class="tab-content hidden">
+                <div class="text-center py-12 text-slate-400">Loading ongoing events...</div>
+            </div>
+            
+            <div id="pastTab" class="tab-content hidden">
+                <div class="text-center py-12 text-slate-400">Loading past events...</div>
+            </div>
+            
+            <div id="myeventsTab" class="tab-content hidden">
+                <div class="text-center py-12 text-slate-400">Loading your events...</div>
+            </div>
+            
+            <div id="myapplicationsTab" class="tab-content hidden">
+                <div class="text-center py-12 text-slate-400">Loading your applications...</div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Event Details Modal -->
+    <div id="eventDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-sm max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-8">
+                <div id="eventDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-sm max-w-lg w-full p-8">
+            <h2 class="text-xl font-bold text-[#1a1c1e] mb-4">Submit Event Feedback</h2>
+            <form id="feedbackForm" onsubmit="saveFeedback(); return false;">
+                <div class="mb-4">
+                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Rating</label>
+                    <div class="flex gap-2">
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="rating" value="1" class="mr-1">
+                            <span>1⭐</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="rating" value="2" class="mr-1">
+                            <span>2⭐</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="rating" value="3" class="mr-1">
+                            <span>3⭐</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="rating" value="4" class="mr-1">
+                            <span>4⭐</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="rating" value="5" class="mr-1">
+                            <span>5⭐</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Feedback (Optional)</label>
+                    <textarea id="feedbackText" rows="4" 
+                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"
+                        placeholder="Share your experience..."></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeModal('feedbackModal')" class="flex-1 px-4 py-2 bg-[#f1f0ec] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#e5e3da]">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-[#2d4a63] text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#1a1c1e]">
+                        Submit Feedback
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Application Modal -->
+    <div id="applicationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-sm max-w-5xl w-full my-8">
+            <div class="p-8 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-[#1a1c1e]">Apply for New Event</h2>
+                    <button onclick="closeModal('applicationModal')" class="text-slate-400 hover:text-slate-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <form id="applicationForm" onsubmit="submitEventApplication(); return false;">
+                    <div class="space-y-6">
+                        
+                        <!-- Basic Information -->
+                        <div class="border-l-4 border-[#2d4a63] pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Basic Information</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="md:col-span-2">
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Event Title *</label>
+                                    <input type="text" id="appTitle" required 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Description *</label>
+                                    <textarea id="appDescription" rows="3" required 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Event Type *</label>
+                                    <select id="appEventType" required 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                        <option value="">Select Type</option>
+                                        <option value="academic">Academic</option>
+                                        <option value="cultural">Cultural</option>
+                                        <option value="technical">Technical</option>
+                                        <option value="sports">Sports</option>
+                                        <option value="social">Social Service</option>
+                                        <option value="workshop">Workshop</option>
+                                        <option value="seminar">Seminar</option>
+                                        <option value="competition">Competition</option>
+                                        <option value="fundraiser">Fundraiser</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Your Club *</label>
+                                    <select id="appClub" required 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                        <option value="">Select Club</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date & Time -->
+                        <div class="border-l-4 border-[#3d706e] pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Date & Time</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Start Date & Time *</label>
+                                    <input type="datetime-local" id="appStartDate" required 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">End Date & Time *</label>
+                                    <input type="datetime-local" id="appEndDate" required 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Registration Start</label>
+                                    <input type="datetime-local" id="appRegStart" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Registration End</label>
+                                    <input type="datetime-local" id="appRegEnd" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Venue & Location -->
+                        <div class="border-l-4 border-[#c5a059] pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Venue & Location</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Venue Name *</label>
+                                    <input type="text" id="appVenue" required 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="appIsOnline" class="w-4 h-4">
+                                        <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Online Event</span>
+                                    </label>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Venue Address</label>
+                                    <textarea id="appVenueAddress" rows="2" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Capacity & Registration -->
+                        <div class="border-l-4 border-[#2d4a63] pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Capacity & Registration</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="flex items-center gap-2 cursor-pointer mb-2">
+                                        <input type="checkbox" id="appRequiresRegistration" class="w-4 h-4">
+                                        <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Requires Registration</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Max Participants</label>
+                                    <input type="number" id="appMaxParticipants" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Registration Fee (₹)</label>
+                                    <input type="number" id="appRegistrationFee" value="0" min="0" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Budget & Finance -->
+                        <div class="border-l-4 border-[#3d706e] pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Budget & Finance</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Estimated Budget (₹) *</label>
+                                    <input type="number" id="appEstimatedBudget" required min="0" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Funding Source *</label>
+                                    <input type="text" id="appFundingSource" required placeholder="e.g., Club Fund, Sponsorship, College Grant" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Budget Breakdown (Item-wise) *</label>
+                                    <textarea id="appBudgetBreakdown" rows="4" required
+                                        placeholder="Example:&#10;Venue: ₹5000&#10;Equipment: ₹3000&#10;Catering: ₹10000&#10;Marketing: ₹2000"
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63] font-mono"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Details (In-Depth) -->
+                        <div class="border-l-4 border-[#c5a059] pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Event Details (In-Depth)</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Objectives *</label>
+                                    <textarea id="appObjectives" rows="3" required
+                                        placeholder="What are the main goals and objectives of this event?"
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Target Audience *</label>
+                                    <textarea id="appTargetAudience" rows="2" required
+                                        placeholder="Who is this event for? (e.g., All students, specific years, departments)"
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Expected Outcomes *</label>
+                                    <textarea id="appExpectedOutcomes" rows="3" required
+                                        placeholder="What outcomes do you expect from this event?"
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Resource Requirements *</label>
+                                    <textarea id="appResourceRequirements" rows="3" required
+                                        placeholder="What resources are needed? (Equipment, space, materials, etc.)"
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Volunteer Requirements</label>
+                                    <textarea id="appVolunteerRequirements" rows="2"
+                                        placeholder="How many volunteers needed and their roles?"
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Safety Measures *</label>
+                                    <textarea id="appSafetyMeasures" rows="3" required
+                                        placeholder="What safety and security measures will be in place?"
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Risk Assessment</label>
+                                    <textarea id="appRiskAssessment" rows="3"
+                                        placeholder="Potential risks and mitigation strategies"
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Special Permissions Required</label>
+                                    <textarea id="appSpecialPermissions" rows="2"
+                                        placeholder="Any special permissions needed from administration?"
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Faculty Mentor Details -->
+                        <div class="border-l-4 border-[#2d4a63] pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Faculty Mentor Details</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Faculty Mentor Name *</label>
+                                    <input type="text" id="appFacultyName" required 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Faculty Email</label>
+                                    <input type="email" id="appFacultyEmail" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Department</label>
+                                    <input type="text" id="appFacultyDepartment" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="border-l-4 border-[#3d706e] pl-4">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-[#1a1c1e] mb-4">Contact Information</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Contact Email</label>
+                                    <input type="email" id="appContactEmail" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Contact Phone</label>
+                                    <input type="tel" id="appContactPhone" 
+                                        class="w-full px-4 py-2 border border-[#e5e3da] rounded-sm text-sm focus:outline-none focus:border-[#2d4a63]">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Actions -->
+                        <div class="flex gap-4 pt-4 border-t border-[#e5e3da]">
+                            <button type="button" onclick="closeModal('applicationModal')" 
+                                class="flex-1 px-6 py-3 bg-[#f1f0ec] text-[#1a1c1e] text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#e5e3da] transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                class="flex-1 px-6 py-3 bg-[#2d4a63] text-white text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[#1a1c1e] transition-colors">
+                                Submit Application for Approval
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application Modal Functions
+        function openApplicationModal() {
+            // Populate club dropdown
+            const clubSelect = document.getElementById('appClub');
+            clubSelect.innerHTML = '<option value="">Select Club</option>';
+            allClubs.forEach(club => {
+                const option = document.createElement('option');
+                option.value = club.id;
+                option.textContent = club.name;
+                clubSelect.appendChild(option);
+            });
+            
+            document.getElementById('applicationModal').classList.remove('hidden');
+        }
+
+        async function submitEventApplication() {
+            const token = localStorage.getItem('access_token');
+            
+            // Parse budget breakdown
+            const budgetText = document.getElementById('appBudgetBreakdown').value;
+            const budgetBreakdown = {};
+            budgetText.split('\n').forEach(line => {
+                const parts = line.split(':');
+                if (parts.length === 2) {
+                    const key = parts[0].trim();
+                    const value = parts[1].trim().replace(/[₹,]/g, '');
+                    if (key && value) {
+                        budgetBreakdown[key] = parseFloat(value) || 0;
+                    }
+                }
+            });
+            
+            const applicationData = {
+                title: document.getElementById('appTitle').value,
+                description: document.getElementById('appDescription').value,
+                event_type: document.getElementById('appEventType').value,
+                club_id: document.getElementById('appClub').value,
+                start_date: document.getElementById('appStartDate').value,
+                end_date: document.getElementById('appEndDate').value,
+                registration_start: document.getElementById('appRegStart').value || null,
+                registration_end: document.getElementById('appRegEnd').value || null,
+                venue: document.getElementById('appVenue').value,
+                venue_address: document.getElementById('appVenueAddress').value,
+                is_online: document.getElementById('appIsOnline').checked,
+                requires_registration: document.getElementById('appRequiresRegistration').checked,
+                max_participants: parseInt(document.getElementById('appMaxParticipants').value) || null,
+                registration_fee: parseFloat(document.getElementById('appRegistrationFee').value) || 0,
+                estimated_budget: parseFloat(document.getElementById('appEstimatedBudget').value),
+                funding_source: document.getElementById('appFundingSource').value,
+                budget_breakdown: budgetBreakdown,
+                objectives: document.getElementById('appObjectives').value,
+                target_audience: document.getElementById('appTargetAudience').value,
+                expected_outcomes: document.getElementById('appExpectedOutcomes').value,
+                resource_requirements: document.getElementById('appResourceRequirements').value,
+                volunteer_requirements: document.getElementById('appVolunteerRequirements').value,
+                safety_measures: document.getElementById('appSafetyMeasures').value,
+                risk_assessment: document.getElementById('appRiskAssessment').value,
+                special_permissions: document.getElementById('appSpecialPermissions').value,
+                faculty_mentor_name: document.getElementById('appFacultyName').value,
+                faculty_mentor_email: document.getElementById('appFacultyEmail').value,
+                faculty_mentor_department: document.getElementById('appFacultyDepartment').value,
+                contact_email: document.getElementById('appContactEmail').value,
+                contact_phone: document.getElementById('appContactPhone').value,
+            };
+
+            try {
+                const response = await fetch('http://localhost:8000/api/auth/event-application/submit/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(applicationData)
+                });
+
+                const data = await response.json();
+                
+                // Log detailed error for debugging
+                if (!response.ok) {
+                    console.error('Event application submission failed:');
+                    console.error('Status:', response.status);
+                    console.error('Response:', data);
+                }
+
+                if (response.ok) {
+                    showMessage('Event application submitted successfully! Pending faculty approval.', 'success');
+                    closeModal('applicationModal');
+                    document.getElementById('applicationForm').reset();
+                    await loadMyApplications();
+                    switchTab('myapplications');
+                } else {
+                    showMessage(data.error || data.message || 'Failed to submit application', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting application:', error);
+                showMessage('Error submitting application: ' + error.message, 'error');
+            }
+        }
+
+        function displayMyApplications() {
+            const container = document.getElementById('myapplicationsTab');
+            if (!container) return;
+            
+            if (myApplications.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-slate-500 font-bold">No event applications yet</p>
+                        <p class="text-xs text-slate-400 mt-2">Click "Apply for New Event" to submit your first application</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = myApplications.map(app => {
+                const statusColors = {
+                    'draft': 'bg-gray-100 text-gray-700',
+                    'pending_faculty_approval': 'bg-yellow-100 text-yellow-700',
+                    'faculty_rejected': 'bg-red-100 text-red-700',
+                    'pending_admin_approval': 'bg-blue-100 text-blue-700',
+                    'admin_rejected': 'bg-red-100 text-red-700',
+                    'approved': 'bg-green-100 text-green-700',
+                    'in_progress': 'bg-green-100 text-green-700',
+                    'completed': 'bg-gray-100 text-gray-700',
+                    'cancelled': 'bg-gray-100 text-gray-700',
+                };
+                
+                const statusText = app.status.replace(/_/g, ' ').toUpperCase();
+                const statusColor = statusColors[app.status] || 'bg-gray-100 text-gray-700';
+                
+                return `
+                    <div class="bg-white border border-[#e5e3da] rounded-sm p-6 mb-4">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="text-lg font-bold text-[#1a1c1e]">${app.title}</h3>
+                                    <span class="text-xs font-bold uppercase tracking-widest ${statusColor} px-3 py-1 rounded-sm">${statusText}</span>
+                                </div>
+                                <p class="text-sm text-slate-600 mb-2">${app.description}</p>
+                                <div class="flex items-center gap-4 text-xs text-slate-500">
+                                    <span>📅 ${formatDate(new Date(app.start_date))}</span>
+                                    <span>📍 ${app.venue}</span>
+                                    <span>💰 ₹${app.estimated_budget}</span>
+                                    <span>🏛️ ${app.club.name}</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400 mb-1">Applied on</div>
+                                <div class="text-xs font-bold text-slate-600">${formatDate(new Date(app.created_at))}</div>
+                            </div>
+                        </div>
+                        
+                        ${app.faculty_rejection_reason || app.admin_rejection_reason ? `
+                            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                                <div class="text-xs font-bold uppercase tracking-widest text-red-700 mb-2">Rejection Reason</div>
+                                <p class="text-sm text-red-600">${app.faculty_rejection_reason || app.admin_rejection_reason}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-[#e5e3da]">
+                            ${app.faculty_approved_at ? `
+                                <div>
+                                    <div class="text-xs text-slate-400 mb-1">Faculty Approval</div>
+                                    <div class="text-xs font-bold text-green-600">✓ Approved</div>
+                                    <div class="text-xs text-slate-500">${formatDate(new Date(app.faculty_approved_at))}</div>
+                                </div>
+                            ` : app.status === 'pending_faculty_approval' ? `
+                                <div>
+                                    <div class="text-xs text-slate-400 mb-1">Faculty Approval</div>
+                                    <div class="text-xs font-bold text-yellow-600">⏳ Pending</div>
+                                </div>
+                            ` : ''}
+                            
+                            ${app.admin_approved_at ? `
+                                <div>
+                                    <div class="text-xs text-slate-400 mb-1">Admin Approval</div>
+                                    <div class="text-xs font-bold text-green-600">✓ Approved</div>
+                                    <div class="text-xs text-slate-500">${formatDate(new Date(app.admin_approved_at))}</div>
+                                </div>
+                            ` : app.status === 'pending_admin_approval' ? `
+                                <div>
+                                    <div class="text-xs text-slate-400 mb-1">Admin Approval</div>
+                                    <div class="text-xs font-bold text-yellow-600">⏳ Pending</div>
+                                </div>
+                            ` : ''}
+                            
+                            ${app.status === 'approved' ? `
+                                <div class="md:col-span-2">
+                                    <div class="text-xs text-green-600 font-bold mb-1">🎉 Event is now ACTIVE!</div>
+                                    <div class="text-xs text-slate-500">Manage your event from the Events tab</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${app.faculty_mentor_name ? `
+                            <div class="mt-4 pt-4 border-t border-[#e5e3da]">
+                                <div class="text-xs text-slate-400 mb-1">Faculty Mentor</div>
+                                <div class="text-sm font-bold text-slate-600">${app.faculty_mentor_name}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+
+        function viewEventLedger(eventId) {
+            window.location.href = `event-ledger.html?id=${eventId}`;
+        }
+    </script>
+
+</body>
+</html>
+

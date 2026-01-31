@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard | CAMPUSPHERE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="../../auth.js"></script>
+    <script>
+        let pendingApplications = [];
+        let pendingEvents = [];
+        let myClubs = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!protectPage('faculty')) {
+                return;
+            }
+            
+            loadUserInfo();
+            loadMyClubs();
+        });
+
+        async function loadUserInfo() {
+            const user = getCurrentUser();
+            console.log('Logged in faculty user:', user);
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/profile/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    const fullName = userData.first_name && userData.last_name 
+                        ? `${userData.first_name} ${userData.last_name}` 
+                        : userData.username;
+                    
+                    const initials = userData.first_name && userData.last_name
+                        ? `${userData.first_name.charAt(0)}${userData.last_name.charAt(0)}`
+                        : userData.username.substring(0, 2).toUpperCase();
+                    
+                    document.getElementById('userInitials').textContent = initials;
+                    document.getElementById('userName').textContent = fullName;
+                    document.getElementById('welcomeName').textContent = userData.first_name || userData.username;
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        async function loadMyClubs() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/my-clubs/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    myClubs = await response.json();
+                    console.log('Faculty clubs:', myClubs);
+                    displayMyClubs();
+                    loadPendingApplications();
+                    loadPendingEvents();
+                }
+            } catch (error) {
+                console.error('Error loading clubs:', error);
+            }
+        }
+
+        function displayMyClubs() {
+            const container = document.getElementById('myClubsContainer');
+            if (myClubs.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 text-sm">No clubs assigned</p>';
+                return;
+            }
+
+            container.innerHTML = myClubs.map(club => `
+                <div class="bg-white border border-slate-200 rounded-sm p-4">
+                    <h3 class="text-sm font-bold text-[#1a1c1e] mb-1">${club.club_name}</h3>
+                    <p class="text-xs text-slate-500 uppercase tracking-wide">${club.role}</p>
+                    <p class="text-xs text-slate-400 mt-2">${club.department || 'No department'}</p>
+                </div>
+            `).join('');
+        }
+
+        async function loadPendingApplications() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/auth/club-applications/pending-faculty/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    pendingApplications = await response.json();
+                    console.log('Pending applications:', pendingApplications);
+                    displayPendingApplications();
+                    updateStats();
+                } else {
+                    console.error('Failed to load pending applications');
+                    document.getElementById('applicationsContainer').innerHTML = 
+                        '<p class="text-slate-400 text-sm">Failed to load applications</p>';
+                }
+            } catch (error) {
+                console.error('Error loading applications:', error);
+                document.getElementById('applicationsContainer').innerHTML = 
+                    '<p class="text-slate-400 text-sm">Error loading applications</p>';
+            }
+        }
+
+        async function loadPendingEvents() {
+            try {
+                const token = localStorage.getItem('access_token');
+                
+                // Use the dedicated endpoint for faculty pending approvals
+                const response = await fetch('http://localhost:8000/api/auth/event-applications/pending-faculty/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    pendingEvents = data.pending_events || [];
+                    console.log('Pending events:', pendingEvents);
+                    displayPendingEvents();
+                    updateStats();
+                } else {
+                    console.error('Failed to load pending events:', response.status);
+                    document.getElementById('eventsContainer').innerHTML = 
+                        '<p class="text-slate-400 text-sm">Failed to load pending events</p>';
+                }
+            } catch (error) {
+                console.error('Error loading events:', error);
+                document.getElementById('eventsContainer').innerHTML = 
+                    '<p class="text-slate-400 text-sm">Error loading events</p>';
+            }
+        }
+
+        function displayPendingApplications() {
+            const container = document.getElementById('applicationsContainer');
+            
+            if (pendingApplications.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-slate-500 font-bold">No pending applications</p>
+                        <p class="text-xs text-slate-400 mt-2">All applications have been reviewed</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pendingApplications.map(app => `
+                <div class="bg-white border border-slate-200 rounded-sm p-6 hover:border-[#2d4a63] transition-colors">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">${app.application_id}</span>
+                                <span class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm bg-yellow-100 text-yellow-700">Pending Review</span>
+                                <span class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm bg-blue-100 text-blue-700">${app.application_type}</span>
+                            </div>
+                            <h3 class="text-base font-bold text-[#1a1c1e] mb-2">${app.title}</h3>
+                            <p class="text-sm text-slate-600 mb-3">${app.description}</p>
+                            <div class="flex items-center gap-4 text-xs text-slate-500">
+                                <span>📅 ${formatDate(app.created_at)}</span>
+                                <span>🏛️ ${app.club_name}</span>
+                                <span>👤 ${app.submitted_by_name}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${app.justification ? `
+                    <div class="mb-4 p-3 bg-slate-50 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Justification</p>
+                        <p class="text-xs text-slate-600">${app.justification}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="flex gap-3 mt-4">
+                        <button onclick="approveApplication('${app.id}')" 
+                            class="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors">
+                            ✓ Approve
+                        </button>
+                        <button onclick="rejectApplication('${app.id}')" 
+                            class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors">
+                            ✗ Reject
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function displayPendingEvents() {
+            const container = document.getElementById('eventsContainer');
+            
+            if (pendingEvents.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <p class="text-slate-500 font-bold">No pending events</p>
+                        <p class="text-xs text-slate-400 mt-2">All events have been reviewed</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pendingEvents.map(event => `
+                <div class="bg-white border border-slate-200 rounded-sm p-6 hover:border-[#2d4a63] transition-colors">
+                    <!-- Header -->
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">${event.event_id}</span>
+                                <span class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm bg-yellow-100 text-yellow-700">Pending Review</span>
+                                <span class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm bg-purple-100 text-purple-700">${event.event_type}</span>
+                                ${event.is_joint_event ? '<span class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm bg-blue-100 text-blue-700">Joint Event</span>' : ''}
+                            </div>
+                            <h3 class="text-base font-bold text-[#1a1c1e] mb-2">${event.title}</h3>
+                            <p class="text-sm text-slate-600 mb-3">${event.description}</p>
+                        </div>
+                        <button onclick="downloadEventPDF('${event.event_id}')" 
+                            class="ml-4 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            PDF
+                        </button>
+                    </div>
+                    
+                    <!-- Basic Info -->
+                    <div class="grid grid-cols-2 gap-4 text-xs mb-4">
+                        <div class="p-3 bg-slate-50 rounded-sm">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Club</p>
+                            <p class="text-slate-700 font-medium">${event.club.name}</p>
+                            ${event.is_joint_event && event.collaborating_clubs.length > 0 ? `
+                                <p class="text-[10px] text-slate-500 mt-1">Collaborating: ${event.collaborating_clubs.map(c => c.name).join(', ')}</p>
+                            ` : ''}
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-sm">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Submitted By</p>
+                            <p class="text-slate-700 font-medium">${event.created_by.name}</p>
+                            <p class="text-[10px] text-slate-500">${event.created_by.email}</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-sm">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date & Time</p>
+                            <p class="text-slate-700">📅 ${formatDate(event.start_date)} - ${formatDate(event.end_date)}</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-sm">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Venue</p>
+                            <p class="text-slate-700">📍 ${event.venue || 'TBD'}</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-sm">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Participants</p>
+                            <p class="text-slate-700">👥 ${event.max_participants || 'Unlimited'}</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-sm">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Budget</p>
+                            <p class="text-slate-700 font-bold">💰 ₹${event.estimated_budget || 0}</p>
+                        </div>
+                    </div>
+
+                    ${event.faculty_mentor_name ? `
+                    <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-blue-700 mb-1">Faculty Mentor</p>
+                        <p class="text-sm text-slate-700">${event.faculty_mentor_name} (${event.faculty_mentor_department})</p>
+                        <p class="text-xs text-slate-500">${event.faculty_mentor_email}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Detailed Sections -->
+                    ${event.objectives ? `
+                    <div class="mb-4 p-3 bg-slate-50 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Objectives</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.objectives}</p>
+                    </div>
+                    ` : ''}
+
+                    ${event.target_audience ? `
+                    <div class="mb-4 p-3 bg-slate-50 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Target Audience</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.target_audience}</p>
+                    </div>
+                    ` : ''}
+
+                    ${event.expected_outcomes ? `
+                    <div class="mb-4 p-3 bg-slate-50 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Expected Outcomes</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.expected_outcomes}</p>
+                    </div>
+                    ` : ''}
+
+                    ${event.budget_breakdown ? `
+                    <div class="mb-4 p-3 bg-slate-50 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Budget Breakdown</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.budget_breakdown}</p>
+                    </div>
+                    ` : ''}
+
+                    ${event.funding_source ? `
+                    <div class="mb-4 p-3 bg-slate-50 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Funding Source</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.funding_source}</p>
+                    </div>
+                    ` : ''}
+
+                    ${event.resource_requirements ? `
+                    <div class="mb-4 p-3 bg-slate-50 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Resource Requirements</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.resource_requirements}</p>
+                    </div>
+                    ` : ''}
+
+                    ${event.volunteer_requirements ? `
+                    <div class="mb-4 p-3 bg-slate-50 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Volunteer Requirements</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.volunteer_requirements}</p>
+                    </div>
+                    ` : ''}
+
+                    ${event.safety_measures ? `
+                    <div class="mb-4 p-3 bg-slate-50 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Safety Measures</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.safety_measures}</p>
+                    </div>
+                    ` : ''}
+
+                    ${event.risk_assessment ? `
+                    <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-1">Risk Assessment</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.risk_assessment}</p>
+                    </div>
+                    ` : ''}
+
+                    ${event.special_permissions ? `
+                    <div class="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-purple-700 mb-1">Special Permissions Required</p>
+                        <p class="text-xs text-slate-600 whitespace-pre-line">${event.special_permissions}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3 mt-4">
+                        <button onclick="approveEvent('${event.event_id}')" 
+                            class="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors">
+                            ✓ Approve
+                        </button>
+                        <button onclick="rejectEvent('${event.event_id}')" 
+                            class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors">
+                            ✗ Reject
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('totalApplications').textContent = pendingApplications.length;
+            document.getElementById('totalEvents').textContent = pendingEvents.length;
+            document.getElementById('totalPending').textContent = pendingApplications.length + pendingEvents.length;
+        }
+
+        async function approveApplication(applicationId) {
+            const comments = prompt('Add comments (optional):');
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`http://localhost:8000/api/auth/club-applications/${applicationId}/faculty-approve/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ comments: comments || '' })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert('Application approved! Now pending admin approval.');
+                    loadPendingApplications();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error || 'Failed to approve application'}`);
+                }
+            } catch (error) {
+                console.error('Error approving application:', error);
+                alert('Error approving application');
+            }
+        }
+
+        async function rejectApplication(applicationId) {
+            const reason = prompt('Reason for rejection:');
+            if (!reason) {
+                alert('Reason is required for rejection');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`http://localhost:8000/api/auth/club-applications/${applicationId}/faculty-reject/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason: reason })
+                });
+
+                if (response.ok) {
+                    alert('Application rejected');
+                    loadPendingApplications();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error || 'Failed to reject application'}`);
+                }
+            } catch (error) {
+                console.error('Error rejecting application:', error);
+                alert('Error rejecting application');
+            }
+        }
+
+        async function approveEvent(eventId) {
+            const comments = prompt('Add comments (optional):');
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                // Find event by event_id to get database id
+                const event = pendingEvents.find(e => e.event_id === eventId);
+                if (!event) {
+                    alert('Event not found');
+                    return;
+                }
+                
+                const response = await fetch(`http://localhost:8000/api/auth/event-applications/${event.id}/faculty-approve/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ comments: comments || '' })
+                });
+
+                if (response.ok) {
+                    alert('Event approved! Now pending admin approval.');
+                    loadPendingEvents();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error || 'Failed to approve event'}`);
+                }
+            } catch (error) {
+                console.error('Error approving event:', error);
+                alert('Error approving event');
+            }
+        }
+
+        async function rejectEvent(eventId) {
+            const reason = prompt('Reason for rejection:');
+            if (!reason) {
+                alert('Reason is required for rejection');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                // Find event by event_id to get database id
+                const event = pendingEvents.find(e => e.event_id === eventId);
+                if (!event) {
+                    alert('Event not found');
+                    return;
+                }
+                
+                const response = await fetch(`http://localhost:8000/api/auth/event-applications/${event.id}/faculty-reject/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason: reason })
+                });
+
+                if (response.ok) {
+                    alert('Event rejected');
+                    loadPendingEvents();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error || 'Failed to reject event'}`);
+                }
+            } catch (error) {
+                console.error('Error rejecting event:', error);
+                alert('Error rejecting event');
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        }
+
+        function downloadEventPDF(eventId) {
+            const event = pendingEvents.find(e => e.event_id === eventId);
+            if (!event) return;
+
+            // Create PDF content
+            let pdfContent = `
+EVENT APPLICATION DETAILS
+${'='.repeat(80)}
+
+APPLICATION ID: ${event.event_id}
+TITLE: ${event.title}
+TYPE: ${event.event_type.toUpperCase()}
+STATUS: PENDING FACULTY APPROVAL
+
+${'='.repeat(80)}
+CLUB INFORMATION
+${'='.repeat(80)}
+
+Primary Club: ${event.club.name}
+${event.is_joint_event ? `Joint Event: Yes\nCollaborating Clubs: ${event.collaborating_clubs.map(c => c.name).join(', ')}\n` : ''}
+
+${'='.repeat(80)}
+EVENT DETAILS
+${'='.repeat(80)}
+
+Description:
+${event.description}
+
+Date & Time:
+Start: ${formatDate(event.start_date)}
+End: ${formatDate(event.end_date)}
+
+Venue: ${event.venue}
+Maximum Participants: ${event.max_participants || 'Unlimited'}
+Estimated Budget: ₹${event.estimated_budget}
+
+${event.objectives ? `${'='.repeat(80)}\nOBJECTIVES\n${'='.repeat(80)}\n\n${event.objectives}\n\n` : ''}
+${event.target_audience ? `${'='.repeat(80)}\nTARGET AUDIENCE\n${'='.repeat(80)}\n\n${event.target_audience}\n\n` : ''}
+${event.expected_outcomes ? `${'='.repeat(80)}\nEXPECTED OUTCOMES\n${'='.repeat(80)}\n\n${event.expected_outcomes}\n\n` : ''}
+${event.budget_breakdown ? `${'='.repeat(80)}\nBUDGET BREAKDOWN\n${'='.repeat(80)}\n\n${event.budget_breakdown}\n\n` : ''}
+${event.funding_source ? `${'='.repeat(80)}\nFUNDING SOURCE\n${'='.repeat(80)}\n\n${event.funding_source}\n\n` : ''}
+${event.resource_requirements ? `${'='.repeat(80)}\nRESOURCE REQUIREMENTS\n${'='.repeat(80)}\n\n${event.resource_requirements}\n\n` : ''}
+${event.volunteer_requirements ? `${'='.repeat(80)}\nVOLUNTEER REQUIREMENTS\n${'='.repeat(80)}\n\n${event.volunteer_requirements}\n\n` : ''}
+${event.safety_measures ? `${'='.repeat(80)}\nSAFETY MEASURES\n${'='.repeat(80)}\n\n${event.safety_measures}\n\n` : ''}
+${event.risk_assessment ? `${'='.repeat(80)}\nRISK ASSESSMENT\n${'='.repeat(80)}\n\n${event.risk_assessment}\n\n` : ''}
+${event.special_permissions ? `${'='.repeat(80)}\nSPECIAL PERMISSIONS\n${'='.repeat(80)}\n\n${event.special_permissions}\n\n` : ''}
+
+${'='.repeat(80)}
+FACULTY MENTOR
+${'='.repeat(80)}
+
+Name: ${event.faculty_mentor_name || 'N/A'}
+Email: ${event.faculty_mentor_email || 'N/A'}
+Department: ${event.faculty_mentor_department || 'N/A'}
+
+${'='.repeat(80)}
+SUBMITTED BY
+${'='.repeat(80)}
+
+Name: ${event.created_by.name}
+Email: ${event.created_by.email}
+Submitted On: ${formatDate(event.created_at)}
+
+${'='.repeat(80)}
+
+Generated on: ${new Date().toLocaleString()}
+CAMPUSPHERE - Event Management System
+`;
+
+            // Create blob and download
+            const blob = new Blob([pdfContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Event_${event.event_id}_${event.title.replace(/[^a-z0-9]/gi, '_')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+    </script>
+</head>
+<body class="bg-[#faf9f6] min-h-screen font-sans antialiased">
+    
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white h-screen fixed left-0 top-0 border-r border-slate-200 overflow-y-auto">
+            <!-- Logo Section -->
+            <div class="p-6 border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-[#2d4a63] rounded-sm flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">CS</span>
+                    </div>
+                    <div>
+                        <h1 class="text-[13px] font-bold tracking-[0.2em] text-[#1a1c1e]">CAMPUSPHERE</h1>
+                        <p class="text-[9px] text-slate-400 uppercase tracking-widest">Faculty Portal</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile Section -->
+            <div class="p-6 border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <div id="userInitials" class="w-12 h-12 rounded-full bg-[#2d4a63] flex items-center justify-center text-white font-bold text-sm">
+                        FA
+                    </div>
+                    <div>
+                        <div id="userName" class="text-[11px] font-bold text-[#1a1c1e]">Loading...</div>
+                        <div class="text-[9px] text-slate-400 uppercase tracking-widest">Faculty Advisor</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="p-6">
+                <div class="mb-8">
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">Main Menu</div>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="faculty-dashboard.html" class="sidebar-link active flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-[#1a1c1e] rounded-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                Dashboard
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-4 px-3">System</div>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#logout" onclick="handleLogout(); return false;" class="sidebar-link flex items-center gap-3 px-3 py-3 text-[12px] font-bold uppercase tracking-widest text-red-500 hover:text-red-600 rounded-sm cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-72 flex-1 p-12">
+            
+            <!-- Header -->
+            <header class="mb-8">
+                <h1 class="text-2xl font-bold text-[#1a1c1e] mb-2">
+                    Welcome, <span id="welcomeName">Faculty</span>
+                </h1>
+                <p class="text-sm text-slate-500">Review and approve pending club applications and event requests</p>
+            </header>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-3 gap-6 mb-8">
+                <div class="bg-white border border-slate-200 rounded-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Total Pending</p>
+                            <p id="totalPending" class="text-3xl font-bold text-[#1a1c1e]">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-100 rounded-sm flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-200 rounded-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Applications</p>
+                            <p id="totalApplications" class="text-3xl font-bold text-[#1a1c1e]">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-sm flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-200 rounded-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Events</p>
+                            <p id="totalEvents" class="text-3xl font-bold text-[#1a1c1e]">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-sm flex items-center justify-center">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Clubs -->
+            <section class="mb-8">
+                <h2 class="text-lg font-bold text-[#1a1c1e] mb-4">My Clubs</h2>
+                <div id="myClubsContainer" class="grid grid-cols-3 gap-4">
+                    <p class="text-slate-400 text-sm">Loading...</p>
+                </div>
+            </section>
+
+            <!-- Pending Applications -->
+            <section class="mb-8">
+                <h2 class="text-lg font-bold text-[#1a1c1e] mb-4">Pending Club Applications</h2>
+                <div id="applicationsContainer" class="space-y-4">
+                    <p class="text-slate-400 text-sm">Loading applications...</p>
+                </div>
+            </section>
+
+            <!-- Pending Events -->
+            <section>
+                <h2 class="text-lg font-bold text-[#1a1c1e] mb-4">Pending Event Approvals</h2>
+                <div id="eventsContainer" class="space-y-4">
+                    <p class="text-slate-400 text-sm">Loading events...</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <style>
+        .sidebar-link {
+            transition: all 0.2s ease;
+        }
+        
+        .sidebar-link:hover {
+            background-color: #faf9f6;
+        }
+        
+        .sidebar-link.active {
+            background-color: #faf9f6;
+            border-left: 3px solid #2d4a63;
+        }
+    </style>
+</body>
+</html>
