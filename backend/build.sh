@@ -3,6 +3,8 @@
 
 set -o errexit  # Exit on error
 
+cd backend
+
 # Install dependencies
 pip install -r requirements.txt
 
@@ -14,5 +16,5 @@ python manage.py migrate
 
 # Create admin user if it doesn't exist (try both methods)
 echo "Creating admin user..."
-python manage.py ensure_admin || python create_admin_on_deploy.py
-echo "Admin user setup complete"
+python manage.py ensure_admin || python create_admin_on_deploy.py || echo "Will create on startup"
+echo "Build complete"

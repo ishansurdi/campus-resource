@@ -13,7 +13,7 @@ services:
     env: python
     region: singapore
     plan: free
-    buildCommand: ./backend/build.sh
+    buildCommand: chmod +x backend/build.sh && backend/build.sh
     startCommand: cd backend && gunicorn campusphere.wsgi:application
     envVars:
       - key: PYTHON_VERSION
