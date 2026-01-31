@@ -97,7 +97,6 @@ else:
             'PORT': config('DB_PORT'),
         }
     }
-}
 
 # Custom User Model
 AUTH_USER_MODEL = 'authentication.AdminUser'
